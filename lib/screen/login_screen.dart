@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_screen.dart';
-import 'home_screen.dart'; // Import HomeScreen
+import 'home_screen.dart';
+import 'reset_password_screen.dart'; // Import Reset Password Screen
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,8 +25,6 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Login Successful")),
       );
-
-      // Navigate to HomeScreen after successful login
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -56,7 +55,18 @@ class _LoginScreenState extends State<LoginScreen> {
               obscureText: true,
               decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
             ),
-            const SizedBox(height: 30.0),
+            const SizedBox(height: 10.0),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ResetPasswordScreen()),
+                ),
+                child: const Text('Forgot Password?'),
+              ),
+            ),
+            const SizedBox(height: 20.0),
             ElevatedButton(
               onPressed: _login,
               child: const Text('Login'),
