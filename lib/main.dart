@@ -20,25 +20,30 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Modern Pharmacy',
       theme: ThemeData(
-        primarySwatch: Colors.red, // Change to red color
-        scaffoldBackgroundColor: Colors.white,
+        primaryColor: const Color(0xFF14cbea),
+        scaffoldBackgroundColor: const Color(0xFFf5f5f5),
         textTheme: const TextTheme(
-          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.red), // red headline
-          bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
+          headlineSmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF0a6979)),
+          bodyLarge: TextStyle(fontSize: 16, color: Color(0xFF343c3c)),
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red.shade700, // Red button background
-            padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+            backgroundColor: const Color(0xFF31B8CF),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 9),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            textStyle: const TextStyle(fontSize: 18),
+            textStyle: const TextStyle(fontSize: 16),
           ),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF04A3BE),
+          titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
         ),
       ),
       home: const HomePage(),
     );
   }
 }
+
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -47,43 +52,86 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Modern Pharmacy', style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.red, // red app bar
+        title: const Text('Med Hub'),
         centerTitle: true,
+        backgroundColor: const Color(0xFF04A3BE),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset('assets/pharmacy_logo.png', height: 150),
-            const SizedBox(height: 20),
-            Text(
-              'Welcome to Modern Pharmacy',
-              style: Theme.of(context).textTheme.headlineSmall, // Using red headline
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              child: const Text('Login'),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SignUpScreen()),
-                );
-              },
-              child: const Text('Register'),
-            ),
-          ],
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Table for Name and ID Alignment (No Padding, Font Size 12)
+              Table(
+                columnWidths: const {
+                  0: FlexColumnWidth(2), // Adjust width for names
+                  1: FlexColumnWidth(1), // Adjust width for IDs
+                },
+                children: const [
+                  TableRow(children: [
+                    Text('Rakib Hossan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('20235203073', style: TextStyle(fontSize: 12)),
+                  ]),
+                  TableRow(children: [
+                    Text('Mahfuz Ali', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('20235203071', style: TextStyle(fontSize: 12)),
+                  ]),
+                  TableRow(children: [
+                    Text('Akash Hossain', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('20235203068', style: TextStyle(fontSize: 12)),
+                  ]),
+                  TableRow(children: [
+                    Text('Labib Hasan', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('20235203037', style: TextStyle(fontSize: 12)),
+                  ]),
+                  TableRow(children: [
+                    Text('Santo Mitro', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                    Text('20235203066', style: TextStyle(fontSize: 12)),
+                  ]),
+                ],
+              ),
+
+              const SizedBox(height: 20),
+
+              // Logo Image
+              Image.asset('lib/assets/v987-18a.jpg', height: 150),
+
+              const SizedBox(height: 20),
+
+              Text(
+                'Welcome to Med Hub',
+                style: Theme.of(context).textTheme.headlineSmall,
+                textAlign: TextAlign.center,
+              ),
+
+              const SizedBox(height: 30),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
+                },
+                child: const Text('Login'),
+              ),
+
+              const SizedBox(height: 15),
+
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                  );
+                },
+                child: const Text('Register'),
+              ),
+            ],
+          ),
         ),
       ),
     );
