@@ -16,7 +16,46 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  // Form validation logic
+  bool _validateInputs() {
+    if (emailController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter your email');
+      return false;
+    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(emailController.text.trim())) {
+      _showErrorDialog('Please enter a valid email address');
+      return false;
+    } else if (passwordController.text.trim().isEmpty) {
+      _showErrorDialog('Please enter your password');
+      return false;
+    }
+    return true;
+  }
+
+  // Show error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _login() async {
+    // Perform validation before proceeding with login
+    if (!_validateInputs()) return;
+
     try {
       await _auth.signInWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -29,10 +68,18 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      // Handle specific Firebase errors
+      if (e.code == 'user-not-found') {
+        _showErrorDialog('No user found for that email.');
+      } else if (e.code == 'wrong-password') {
+        _showErrorDialog('Wrong password provided for that user.');
+      } else {
+        _showErrorDialog('Error: Wrong password provided for that user.');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      // Handle other errors
+      _showErrorDialog('An unexpected error occurred. Please try again.');
     }
   }
 
