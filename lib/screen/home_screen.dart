@@ -42,7 +42,7 @@ class HomeScreen extends StatelessWidget {
               leading: const Icon(Icons.person),
               title: const Text('Profile'),
               onTap: () async {
-                await FirebaseAuth.instance.signOut();
+                // await FirebaseAuth.instance.signOut();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(

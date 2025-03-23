@@ -129,15 +129,6 @@ class HomePage extends StatelessWidget {
                 },
                 child: const Text('Register'),
               ),
-                const SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomeScreen()),
-                  );
-                },
-                child: const Text('Go to Home Page'),),
             ],
           ),
         ),

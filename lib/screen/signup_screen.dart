@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -10,6 +11,7 @@ class SignUpScreen extends StatefulWidget {
 
 class _SignUpScreenState extends State<SignUpScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
@@ -106,10 +108,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
-      await _auth.createUserWithEmailAndPassword(
+      // Create user with email and password
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: emailController.text.trim(),
         password: passwordController.text.trim(),
       );
+
+      // Get the user UID
+      String uid = userCredential.user!.uid;
+
+      // Add user data to Firestore
+      await _firestore.collection('user_info').doc(uid).set({
+        'uid': uid,
+        'email': emailController.text.trim(),
+        'name': '', // You can add a name field here if needed
+        'phone': 0, // You can add a phone field here if needed
+        'age': 0, // You can add an age field here if needed
+        'gender': '', // You can add a gender field here if needed
+        'address': '', // You can add an address field here if needed
+        'role': 'user', // Default role, can be modified later
+      });
+
+      // Show success dialog
       _showSuccessDialog("Account created successfully! You can now log in.");
     } on FirebaseAuthException catch (e) {
       String errorMessage = _getFirebaseErrorMessage(e.code);
