@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:new_project/services/edit_profile.dart';
 
-
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -88,32 +87,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ? const Center(child: Text('No user data available'))
               : Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildUserInfoRow("Email", userData?['email'] ?? 'Not available'),
-                      _buildUserInfoRow("Name", userData?['name'] ?? 'Not available'),
-                      _buildUserInfoRow("Phone", userData?['phone']?.toString() ?? 'Not available'),
-                      _buildUserInfoRow("Age", userData?['age']?.toString() ?? 'Not available'),
-                      _buildUserInfoRow("Gender", userData?['gender'] ?? 'Not available'),
-                      _buildUserInfoRow("Address", userData?['address'] ?? 'Not available'),
-                      _buildUserInfoRow("Role", userData?['role'] ?? 'Not available'),
-                      const SizedBox(height: 20),
-                      // Edit button - Navigate to EditProfileScreen
-                      ElevatedButton(
-                        onPressed: () async {
-                          // Wait for the EditProfileScreen to return and refresh the data
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EditProfileScreen(userData: userData!), // Pass userData to EditProfileScreen
-                            ),
-                          );
-                          _fetchUserData();  // Reload data after the edit
-                        },
-                        child: const Text('Edit User'),
-                      ),
-                    ],
+                  child: SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        // Display user icon as the first letter of email
+                        CircleAvatar(
+                          radius: 50,
+                          child: Text(
+                            userData?['email']?.substring(0, 1).toUpperCase() ?? 'N', // First letter of email
+                            style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                          ),
+                          backgroundColor: Colors.blueAccent, // You can customize the background color
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          userData?['name'] ?? 'Name not available',
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          userData?['phone']?.toString() ?? 'Phone not available',
+                          style: const TextStyle(fontSize: 18),
+                        ),
+                        const SizedBox(height: 20),
+                        // Display other fields below
+                        _buildUserInfoRow("Email", userData?['email'] ?? 'Not available'),
+                        _buildUserInfoRow("Age", userData?['age']?.toString() ?? 'Not available'),
+                        _buildUserInfoRow("Gender", userData?['gender'] ?? 'Not available'),
+                        _buildUserInfoRow("Address", userData?['address'] ?? 'Not available'),
+                        _buildUserInfoRow("Role", userData?['role'] ?? 'Not available'),
+                        const SizedBox(height: 20),
+                        // Edit button - Navigate to EditProfileScreen
+                        ElevatedButton(
+                          onPressed: () async {
+                            // Wait for the EditProfileScreen to return and refresh the data
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EditProfileScreen(userData: userData!), // Pass userData to EditProfileScreen
+                              ),
+                            );
+                            _fetchUserData();  // Reload data after the edit
+                          },
+                          child: const Text('Edit User'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
     );
