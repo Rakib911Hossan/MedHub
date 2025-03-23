@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/screen/profile_screen.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -12,10 +13,11 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text("Home"),
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
       ),
       drawer: Drawer(
@@ -39,8 +41,14 @@ class HomeScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.person),
               title: const Text('Profile'),
-              onTap: () {
-                // Navigate to Profile Screen
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -74,9 +82,16 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset('lib/assets/order_medicine.jpg', height: 100, width: 100),
+                      Image.asset(
+                        'lib/assets/order_medicine.jpg',
+                        height: 100,
+                        width: 100,
+                      ),
                       const SizedBox(height: 10),
-                      const Text('Order Medicine', style: TextStyle(fontSize: 16)),
+                      const Text(
+                        'Order Medicine',
+                        style: TextStyle(fontSize: 16),
+                      ),
                     ],
                   ),
                 ),
@@ -91,9 +106,16 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Image.asset('lib/assets/doctor.jpg', height: 100, width: 100),
+                      Image.asset(
+                        'lib/assets/doctor.jpg',
+                        height: 100,
+                        width: 100,
+                      ),
                       const SizedBox(height: 10),
-                      const Text('Consult Doctor', style: TextStyle(fontSize: 16)),
+                      const Text(
+                        'Consult Doctor',
+                        style: TextStyle(fontSize: 16),
+                      ),
                     ],
                   ),
                 ),

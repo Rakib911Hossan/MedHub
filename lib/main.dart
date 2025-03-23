@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:new_project/screen/home_screen.dart';
 import 'package:new_project/screen/login_screen.dart';
 import 'package:new_project/screen/signup_screen.dart';
 
@@ -128,6 +129,15 @@ class HomePage extends StatelessWidget {
                 },
                 child: const Text('Register'),
               ),
+                const SizedBox(height: 15),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  );
+                },
+                child: const Text('Go to Home Page'),),
             ],
           ),
         ),
