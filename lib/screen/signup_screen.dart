@@ -13,28 +13,129 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmPasswordController = TextEditingController();
+  bool _isLoading = false;
 
-  void _signUp() async {
-    if (passwordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
-      return;
+  // Form validation logic
+  String? emailError;
+  String? passwordError;
+  String? confirmPasswordError;
+
+  bool _validateInputs() {
+    setState(() {
+      emailError = null;
+      passwordError = null;
+      confirmPasswordError = null;
+    });
+
+    if (confirmPasswordController.text.trim().isEmpty) {
+      setState(() => confirmPasswordError = 'Please confirm your password');
+      return false;
+    } else if (passwordController.text != confirmPasswordController.text) {
+      setState(() => confirmPasswordError = 'Passwords do not match');
+      return false;
     }
+
+    if (emailController.text.trim().isEmpty) {
+      setState(() => emailError = 'Please enter your email');
+      return false;
+    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        .hasMatch(emailController.text.trim())) {
+      setState(() => emailError = 'Please enter a valid email address');
+      return false;
+    }
+
+    if (passwordController.text.trim().isEmpty) {
+      setState(() => passwordError = 'Please enter your password');
+      return false;
+    } else if (passwordController.text.length < 6) {
+      setState(() => passwordError = 'Password must be at least 6 characters');
+      return false;
+    }
+    return true;
+  }
+
+  // Show error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show success dialog
+  void _showSuccessDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Success'),
+          content: Text(message),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                Navigator.pop(context); // Navigate back to login screen
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Sign up logic with Firebase
+  void _signUp() async {
+    if (!_validateInputs()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       await _auth.createUserWithEmailAndPassword(
-        email: emailController.text,
-        password: passwordController.text,
+        email: emailController.text.trim(),
+        password: passwordController.text.trim(),
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Account Created Successfully")),
-      );
-      Navigator.pop(context); // Navigate back to login
+      _showSuccessDialog("Account created successfully! You can now log in.");
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = _getFirebaseErrorMessage(e.code);
+      _showErrorDialog(errorMessage);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      _showErrorDialog("An unexpected error occurred. Please try again.");
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  // Firebase Error Message Handler
+  String _getFirebaseErrorMessage(String errorCode) {
+    switch (errorCode) {
+      case 'email-already-in-use':
+        return 'This email is already in use. Please try logging in.';
+      case 'invalid-email':
+        return 'The email address is not valid.';
+      case 'operation-not-allowed':
+        return 'This operation is not allowed. Please contact support.';
+      case 'weak-password':
+        return 'Your password is too weak. Please choose a stronger one.';
+      default:
+        return 'An unknown error occurred. Please try again.';
     }
   }
 
@@ -49,25 +150,39 @@ class _SignUpScreenState extends State<SignUpScreen> {
           children: <Widget>[
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: const OutlineInputBorder(),
+                errorText: emailError,
+              ),
             ),
             const SizedBox(height: 20.0),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                border: const OutlineInputBorder(),
+                errorText: passwordError,
+              ),
             ),
             const SizedBox(height: 20.0),
             TextField(
               controller: confirmPasswordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Confirm Password', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                border: const OutlineInputBorder(),
+                errorText: confirmPasswordError,
+              ),
             ),
             const SizedBox(height: 30.0),
-            ElevatedButton(
-              onPressed: _signUp,
-              child: const Text('Sign Up'),
-            ),
+            _isLoading
+                ? const CircularProgressIndicator() // Show loading indicator
+                : ElevatedButton(
+                    onPressed: _signUp,
+                    child: const Text('Sign Up'),
+                  ),
             const SizedBox(height: 20.0),
             TextButton(
               onPressed: () => Navigator.pop(context),
