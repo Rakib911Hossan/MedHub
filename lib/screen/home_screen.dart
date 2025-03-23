@@ -9,7 +9,54 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
-      appBar: AppBar(title: const Text("Home")),
+      appBar: AppBar(
+        title: const Text("Home"),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text(user?.email ?? 'Guest'),
+              accountEmail: Text(user?.email ?? ''),
+              currentAccountPicture: const CircleAvatar(
+                child: Icon(Icons.person),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.home),
+              title: const Text('Home'),
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {
+                // Navigate to Profile Screen
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Center(
@@ -18,10 +65,9 @@ class HomeScreen extends StatelessWidget {
             children: [
               Text("Welcome, ${user?.email ?? 'Guest'}"),
               const SizedBox(height: 20),
-              // First widget for ordering medicine
               GestureDetector(
                 onTap: () {
-                  // Navigate to the order medicine screen (You can create this screen)
+                  // Navigate to order medicine screen
                 },
                 child: Card(
                   elevation: 5.0,
@@ -36,10 +82,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
-              // Second widget for consulting doctor
               GestureDetector(
                 onTap: () {
-                  // Navigate to the consult doctor screen (You can create this screen)
+                  // Navigate to consult doctor screen
                 },
                 child: Card(
                   elevation: 5.0,
@@ -52,17 +97,6 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  );
-                },
-                child: const Text("Logout"),
               ),
             ],
           ),
