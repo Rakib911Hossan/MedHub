@@ -14,7 +14,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
+  final TextEditingController confirmPasswordController =
+      TextEditingController();
   bool _isLoading = false;
 
   // Form validation logic
@@ -40,8 +41,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (emailController.text.trim().isEmpty) {
       setState(() => emailError = 'Please enter your email');
       return false;
-    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-        .hasMatch(emailController.text.trim())) {
+    } else if (!RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(emailController.text.trim())) {
       setState(() => emailError = 'Please enter a valid email address');
       return false;
     }
@@ -109,10 +111,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
     try {
       // Create user with email and password
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
+      UserCredential userCredential = await _auth
+          .createUserWithEmailAndPassword(
+            email: emailController.text.trim(),
+            password: passwordController.text.trim(),
+          );
 
       // Get the user UID
       String uid = userCredential.user!.uid;
@@ -200,9 +203,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
             _isLoading
                 ? const CircularProgressIndicator() // Show loading indicator
                 : ElevatedButton(
-                    onPressed: _signUp,
-                    child: const Text('Sign Up'),
-                  ),
+                  onPressed: _signUp,
+                  child: const Text('Sign Up'),
+                ),
             const SizedBox(height: 20.0),
             TextButton(
               onPressed: () => Navigator.pop(context),
