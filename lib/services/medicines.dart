@@ -61,40 +61,75 @@ class _MedicinesState extends State<Medicines> {
 
           var medicines = snapshot.data!.docs;
 
-          return ListView.builder(
-            itemCount: medicines.length,
-            itemBuilder: (context, index) {
-              var medicine = medicines[index];
-              return Card(
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                child: ListTile(
-                  leading: const Icon(Icons.medical_services, color: Colors.blue),
-                  title: Text(medicine['name'] ?? 'Unknown Medicine'),
-                  subtitle: Text("Price: \$${medicine['price'] ?? 'N/A'}"),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.green),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => EditMedicine(medicineId: medicine.id),
-                            ),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteMedicine(medicine.id),
-                      ),
-                    ],
-                  ),
+          // ✅ Group medicines by category
+          Map<String, List<DocumentSnapshot>> categorizedMedicines = {};
+          for (var med in medicines) {
+            String category = med['category'] ?? 'Uncategorized';
+            if (!categorizedMedicines.containsKey(category)) {
+              categorizedMedicines[category] = [];
+            }
+            categorizedMedicines[category]!.add(med);
+          }
+
+          return ListView(
+            children: categorizedMedicines.keys.map((category) {
+              return ExpansionTile(
+                // The title will be the category name
+                title: Text(
+                  category,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
+                // The children will be all the medicines under this category, shown row-wise with horizontal scroll
+                children: [
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal, // Horizontal scrolling
+                    child: Row(
+                      children: categorizedMedicines[category]!.map<Widget>((medicine) {
+                        return Card(
+                          elevation: 3,
+                          margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.medical_services, color: Colors.blue),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  medicine['name'] ?? 'Unknown Medicine',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                              Text("Price: \$${medicine['price'] ?? 'N/A'}"),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.edit, color: Colors.green),
+                                    onPressed: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              EditMedicine(medicineId: medicine.id),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _deleteMedicine(medicine.id),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
               );
-            },
+            }).toList(),
           );
         },
       ),
