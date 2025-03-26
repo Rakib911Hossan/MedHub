@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:new_project/services/add_medicines.dart';
+
 
 class Medicines extends StatefulWidget {
   const Medicines({super.key});
@@ -28,7 +30,6 @@ class _MedicinesState extends State<Medicines> {
             return const Center(child: Text('No medicines available.'));
           }
 
-          // Convert Firestore documents to a list of medicines
           var medicines = snapshot.data!.docs;
 
           return ListView.builder(
@@ -51,6 +52,15 @@ class _MedicinesState extends State<Medicines> {
             },
           );
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AddMedicine()),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
