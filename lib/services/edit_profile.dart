@@ -28,7 +28,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _loadUserData() {
     if (widget.userData != null) {
       _nameController.text = widget.userData?['name'] ?? '';
-      _phoneController.text = widget.userData?['phone']?.toString() ?? '';
+     _phoneController.text = widget.userData?['phone'] != null 
+    ? '0${widget.userData?['phone'].toString()}' 
+    : '';
+
       _ageController.text = widget.userData?['age']?.toString() ?? '';
       _genderController.text = widget.userData?['gender'] ?? '';
       _addressController.text = widget.userData?['address'] ?? '';
@@ -43,29 +46,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('User not logged in! Please log in first.')),
+        const SnackBar(
+          content: Text('User not logged in! Please log in first.'),
+        ),
       );
       return;
     }
 
     try {
-      await FirebaseFirestore.instance.collection('user_info').doc(user.uid).set({
-        'name': _nameController.text.trim(),
-        'phone': int.tryParse(_phoneController.text.trim()) ?? 0,
-        'age': int.tryParse(_ageController.text.trim()) ?? 0,
-        'gender': _genderController.text.trim(),
-        'address': _addressController.text.trim(),
-        'role': _roleController.text.trim(),
-      }, SetOptions(merge: true));
+      await FirebaseFirestore.instance
+          .collection('user_info')
+          .doc(user.uid)
+          .set({
+            'name': _nameController.text.trim(),
+            'phone': int.tryParse(_phoneController.text.trim()) ?? 0,
+            'age': int.tryParse(_ageController.text.trim()) ?? 0,
+            'gender': _genderController.text.trim(),
+            'address': _addressController.text.trim(),
+            'role': _roleController.text.trim(),
+          }, SetOptions(merge: true));
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully!')),
       );
       Navigator.pop(context); // Go back to ProfileScreen
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to update profile: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to update profile: $e')));
     }
   }
 
@@ -81,11 +89,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: Column(
               children: [
                 _buildTextField(_nameController, 'Name'),
-                _buildTextField(_phoneController, 'Phone', isNumeric: true, phoneValidator: true),
+                _buildTextField(
+                  _phoneController,
+                  'Phone',
+                  isNumeric: true,
+                  phoneValidator: true,
+                ),
                 _buildTextField(_ageController, 'Age', isNumeric: true),
                 _buildTextField(_genderController, 'Gender'),
                 _buildTextField(_addressController, 'Address'),
-                _buildTextField(_roleController, 'Role'),
+                // _buildTextField(_roleController, 'Role'),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _updateUserInfo,
@@ -100,7 +113,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   /// Helper method for text fields
-  Widget _buildTextField(TextEditingController controller, String label, {bool isNumeric = false, bool phoneValidator = false}) {
+  Widget _buildTextField(
+    TextEditingController controller,
+    String label, {
+    bool isNumeric = false,
+    bool phoneValidator = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: TextFormField(
