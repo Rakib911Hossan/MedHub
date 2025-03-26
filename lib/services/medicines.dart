@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:new_project/services/add_medicines.dart';
-
+import 'package:new_project/services/edit_medicine.dart';
 
 class Medicines extends StatefulWidget {
   const Medicines({super.key});
@@ -13,6 +13,35 @@ class Medicines extends StatefulWidget {
 class _MedicinesState extends State<Medicines> {
   final CollectionReference medicinesCollection =
       FirebaseFirestore.instance.collection('medicines');
+
+  void _deleteMedicine(String id) async {
+    bool? confirmDelete = await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Delete"),
+        content: const Text("Are you sure you want to delete this medicine?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context, true);
+            },
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmDelete == true) {
+      await medicinesCollection.doc(id).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Medicine deleted successfully!")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +72,25 @@ class _MedicinesState extends State<Medicines> {
                   leading: const Icon(Icons.medical_services, color: Colors.blue),
                   title: Text(medicine['name'] ?? 'Unknown Medicine'),
                   subtitle: Text("Price: \$${medicine['price'] ?? 'N/A'}"),
-                  trailing: Text(
-                    medicine['category'] ?? 'Unknown Category',
-                    style: const TextStyle(color: Colors.grey),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, color: Colors.green),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EditMedicine(medicineId: medicine.id),
+                            ),
+                          );
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete, color: Colors.red),
+                        onPressed: () => _deleteMedicine(medicine.id),
+                      ),
+                    ],
                   ),
                 ),
               );
