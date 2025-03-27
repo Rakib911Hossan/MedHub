@@ -183,7 +183,7 @@ class _EditMedicineState extends State<EditMedicine> {
                                           stackTrace,
                                         ) {
                                           return Image.asset(
-                                            _imageController.text, // Fallback if image loading fails
+                                            'lib/assets/order_medicine.jpg', // Fallback if image loading fails
                                             height: 150,
                                             width: 150,
                                             fit: BoxFit.cover,
