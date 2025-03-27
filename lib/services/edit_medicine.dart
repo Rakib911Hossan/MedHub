@@ -168,39 +168,65 @@ class _EditMedicineState extends State<EditMedicine> {
                                     Alignment
                                         .bottomRight, // Position the icon at the bottom-right
                                 children: [
-                                  // Check if the image path is not empty and load the image
-                                  _imageController.text.isNotEmpty
-                                      ? Image.file(
-                                        File(
-                                          _imageController.text,
-                                        ), // Use Image.file to load the image from local storage
-                                        height: 150,
-                                        width: 150,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (
-                                          context,
-                                          error,
-                                          stackTrace,
-                                        ) {
-                                          return Image.asset(
-                                            'lib/assets/order_medicine.jpg', // Fallback if image loading fails
-                                            height: 150,
-                                            width: 150,
-                                            fit: BoxFit.cover,
-                                          );
-                                        },
-                                      )
-                                      : Image.asset(
-                                        'lib/assets/order_medicine.jpg', // Default image
-                                        height: 150,
-                                        width: 150,
-                                        fit: BoxFit.cover,
+                                  // Container for the image with border radius
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(
+                                        12,
+                                      ), // Adjust the radius as needed
+                                      border: Border.all(
+                                        color: Colors.grey.withOpacity(
+                                          0.3,
+                                        ), // Optional border color
+                                        width: 1, // Optional border width
                                       ),
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(
+                                        12,
+                                      ), // Same radius as container
+                                      child:
+                                          _imageController.text.isNotEmpty
+                                              ? Image.file(
+                                                File(_imageController.text),
+                                                height: 150,
+                                                width: 150,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (
+                                                  context,
+                                                  error,
+                                                  stackTrace,
+                                                ) {
+                                                  return Image.asset(
+                                                    'lib/assets/order_medicine.jpg',
+                                                    height: 150,
+                                                    width: 150,
+                                                    fit: BoxFit.cover,
+                                                  );
+                                                },
+                                              )
+                                              : Image.asset(
+                                                'lib/assets/order_medicine.jpg',
+                                                height: 150,
+                                                width: 150,
+                                                fit: BoxFit.cover,
+                                              ),
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    height: 8,
+                                  ), // Added spacing between image and button
                                   IconButton(
-                                    icon: Icon(Icons.edit, color: Colors.white),
-                                    onPressed: () {
-                                      _selectImage(); // Call the method to let the user select a new image
-                                    },
+                                    icon: Icon(
+                                      Icons.edit,
+                                      color: const Color.fromARGB(
+                                        255,
+                                        14,
+                                        138,
+                                        111,
+                                      ),
+                                    ),
+                                    onPressed: _selectImage,
                                   ),
                                 ],
                               ),
