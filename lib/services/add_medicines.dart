@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddMedicine extends StatefulWidget {
   const AddMedicine({super.key});
@@ -86,7 +89,53 @@ class _AddMedicineState extends State<AddMedicine> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: [Center(
+                          child: Column(
+                            children: [
+                              Stack(
+                                alignment:
+                                    Alignment
+                                        .bottomRight, // Position the icon at the bottom-right
+                                children: [
+                                  // Check if the image path is not empty and load the image
+                                  _imageController.text.isNotEmpty
+                                      ? Image.file(
+                                        File(
+                                          _imageController.text,
+                                        ), // Use Image.file to load the image from local storage
+                                        height: 150,
+                                        width: 150,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          return Image.asset(
+                                            'lib/assets/order_medicine.jpg', // Fallback if image loading fails
+                                            height: 150,
+                                            width: 150,
+                                            fit: BoxFit.cover,
+                                          );
+                                        },
+                                      )
+                                      : Image.asset(
+                                        'lib/assets/order_medicine.jpg', // Default image
+                                        height: 150,
+                                        width: 150,
+                                        fit: BoxFit.cover,
+                                      ),
+                                  IconButton(
+                                    icon: Icon(Icons.edit, color: Colors.white),
+                                    onPressed: () {
+                                      _selectImage(); // Call the method to let the user select a new image
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Medicine Name'),
@@ -104,12 +153,6 @@ class _AddMedicineState extends State<AddMedicine> {
               decoration:
                   const InputDecoration(labelText: 'Quantity of medicine'),
               onChanged: (value) => _calculateTotalPrice(),
-            ),
-            TextField(
-              controller: _imageController,
-              decoration: const InputDecoration(
-                labelText: 'Image URL (optional)',
-              ),
             ),
             TextField(
               controller: _categoryController,
@@ -140,5 +183,21 @@ class _AddMedicineState extends State<AddMedicine> {
         ),
       ),
     );
+  }
+
+  Future<void> _selectImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageController.text =
+            pickedFile.path; // Store the file path in the controller
+      });
+    } else {
+      print('No image selected');
+    }
   }
 }
