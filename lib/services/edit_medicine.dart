@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditMedicine extends StatefulWidget {
   final String medicineId;
@@ -66,82 +69,81 @@ class _EditMedicineState extends State<EditMedicine> {
     });
   }
 
-Future<void> _updateMedicine() async {
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> _updateMedicine() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  try {
-    await FirebaseFirestore.instance
-        .collection('medicines')
-        .doc(widget.medicineId)
-        .update({
-      'name': _nameController.text,
-      'price': double.tryParse(_priceController.text) ?? 0.0,
-      'quantity': int.tryParse(_quantityController.text) ?? 1,
-      'total_price': double.tryParse(_totalPriceController.text) ?? 0.0,
-      'image': _imageController.text,
-      'category': _categoryController.text,
-      'company': _companyController.text,
-      'generic_group': _genericGroupController.text,
-      'timestamp': FieldValue.serverTimestamp(),
-    });
+    try {
+      await FirebaseFirestore.instance
+          .collection('medicines')
+          .doc(widget.medicineId)
+          .update({
+            'name': _nameController.text,
+            'price': double.tryParse(_priceController.text) ?? 0.0,
+            'quantity': int.tryParse(_quantityController.text) ?? 1,
+            'total_price': double.tryParse(_totalPriceController.text) ?? 0.0,
+            'image': _imageController.text,
+            'category': _categoryController.text,
+            'company': _companyController.text,
+            'generic_group': _genericGroupController.text,
+            'timestamp': FieldValue.serverTimestamp(),
+          });
 
-    // Delay dialog to ensure the context is fully available
-    Future.delayed(const Duration(milliseconds: 200), () {
-      _showUpdateDialog(); // Show the update dialog
-    });
+      // Delay dialog to ensure the context is fully available
+      Future.delayed(const Duration(milliseconds: 200), () {
+        _showUpdateDialog(); // Show the update dialog
+      });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Medicine updated successfully!')),
-    );
-    Navigator.pop(context); // Close the current screen after the update
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error updating medicine: $e')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Medicine updated successfully!')),
+      );
+      Navigator.pop(context); // Close the current screen after the update
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error updating medicine: $e')));
+    }
   }
-}
 
-void _showUpdateDialog() {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('Medicine Updated'),
-        content: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Name: ${_nameController.text}'),
-            Text('Category: ${_categoryController.text}'),
-            Text('Company: ${_companyController.text}'),
-            Text('Generic Group: ${_genericGroupController.text}'),
-             Text(
-              'Price: ${_priceController.text}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Quantity: ${_quantityController.text}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            Text(
-              'Total Price: ${_totalPriceController.text}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
+  void _showUpdateDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Medicine Updated'),
+          content: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Name: ${_nameController.text}'),
+              Text('Category: ${_categoryController.text}'),
+              Text('Company: ${_companyController.text}'),
+              Text('Generic Group: ${_genericGroupController.text}'),
+              Text(
+                'Price: ${_priceController.text}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Quantity: ${_quantityController.text}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Total Price: ${_totalPriceController.text}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: const Text('OK'),
             ),
           ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context); // Close the dialog
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,27 +163,47 @@ void _showUpdateDialog() {
                         Center(
                           child: Column(
                             children: [
-                              _imageController.text.isNotEmpty
-                                  ? Image.network(
-                                    _imageController.text,
-                                    height: 150,
-                                    width: 150,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Image.asset(
-                                        _imageController.text,
+                              Stack(
+                                alignment:
+                                    Alignment
+                                        .bottomRight, // Position the icon at the bottom-right
+                                children: [
+                                  // Check if the image path is not empty and load the image
+                                  _imageController.text.isNotEmpty
+                                      ? Image.file(
+                                        File(
+                                          _imageController.text,
+                                        ), // Use Image.file to load the image from local storage
                                         height: 150,
                                         width: 150,
                                         fit: BoxFit.cover,
-                                      );
+                                        errorBuilder: (
+                                          context,
+                                          error,
+                                          stackTrace,
+                                        ) {
+                                          return Image.asset(
+                                            _imageController.text, // Fallback if image loading fails
+                                            height: 150,
+                                            width: 150,
+                                            fit: BoxFit.cover,
+                                          );
+                                        },
+                                      )
+                                      : Image.asset(
+                                        'lib/assets/order_medicine.jpg', // Default image
+                                        height: 150,
+                                        width: 150,
+                                        fit: BoxFit.cover,
+                                      ),
+                                  IconButton(
+                                    icon: Icon(Icons.edit, color: Colors.white),
+                                    onPressed: () {
+                                      _selectImage(); // Call the method to let the user select a new image
                                     },
-                                  )
-                                  : Image.asset(
-                                    _imageController.text,
-                                    height: 150,
-                                    width: 150,
-                                    fit: BoxFit.cover,
                                   ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -262,5 +284,21 @@ void _showUpdateDialog() {
                 ),
               ),
     );
+  }
+
+  Future<void> _selectImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageController.text =
+            pickedFile.path; // Store the file path in the controller
+      });
+    } else {
+      print('No image selected');
+    }
   }
 }
