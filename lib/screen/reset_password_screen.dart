@@ -11,51 +11,27 @@ class ResetPasswordScreen extends StatefulWidget {
 class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController emailController = TextEditingController();
-  final TextEditingController oldPasswordController = TextEditingController();
-  final TextEditingController newPasswordController = TextEditingController();
-  final TextEditingController confirmPasswordController = TextEditingController();
 
   void _resetPassword() async {
     String email = emailController.text.trim();
-    String oldPassword = oldPasswordController.text.trim();
-    String newPassword = newPasswordController.text.trim();
-    String confirmPassword = confirmPasswordController.text.trim();
 
-    if (email.isEmpty || oldPassword.isEmpty || newPassword.isEmpty || confirmPassword.isEmpty) {
+    if (email.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("All fields are required")),
-      );
-      return;
-    }
-
-    if (newPassword != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("New passwords do not match")),
+        const SnackBar(content: Text("Email field is required")),
       );
       return;
     }
 
     try {
-      // Sign in the user first
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: oldPassword,
+      // Send password reset email
+      await _auth.sendPasswordResetEmail(email: email);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Password reset email sent. Check your inbox.")),
       );
 
-      User? user = userCredential.user;
-
-      if (user != null) {
-        // Update the password
-        await user.updatePassword(newPassword);
-        await _auth.signOut(); // Sign out user after updating password
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Password updated successfully. Please log in again.")),
-        );
-
-        // Navigate back to login screen
-        Navigator.pop(context);
-      }
+      // Navigate back to login screen
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error: ${e.toString()}")),
@@ -76,28 +52,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               controller: emailController,
               decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: oldPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Old Password', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: newPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'New Password', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(labelText: 'Confirm New Password', border: OutlineInputBorder()),
-            ),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: _resetPassword,
-              child: const Text('Reset Password'),
+              child: const Text('Send Reset Link'),
             ),
           ],
         ),

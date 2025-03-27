@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
-import 'reset_password_screen.dart'; // Import Reset Password Screen
+import 'reset_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,7 +16,38 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
+  String? emailError;
+  String? passwordError;
+
+  bool _validateInputs() {
+    setState(() {
+      emailError = null;
+      passwordError = null;
+    });
+
+    if (emailController.text.trim().isEmpty) {
+      setState(() => emailError = 'Please enter your email');
+      return false;
+    } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
+        .hasMatch(emailController.text.trim())) {
+      setState(() => emailError = 'Please enter a valid email address');
+      return false;
+    }
+
+    if (passwordController.text.trim().isEmpty) {
+      setState(() => passwordError = 'Please enter your password');
+      return false;
+    } else if (passwordController.text.length < 6) {
+      setState(() => passwordError = 'Password must be at least 6 characters');
+      return false;
+    }
+
+    return true;
+  }
+
   void _login() async {
+    if (!_validateInputs()) return;
+
     try {
       await _auth.signInWithEmailAndPassword(
         email: emailController.text.trim(),
@@ -29,9 +60,21 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        if (e.code == 'user-not-found') {
+          emailError = 'No user found for this email';
+        } else if (e.code == 'wrong-password') {
+          passwordError = 'Wrong password. Try again';
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.message ?? 'Login failed')),
+          );
+        }
+      });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        const SnackBar(content: Text('An unexpected error occurred')),
       );
     }
   }
@@ -47,13 +90,23 @@ class _LoginScreenState extends State<LoginScreen> {
           children: <Widget>[
             TextField(
               controller: emailController,
-              decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+              keyboardType: TextInputType.emailAddress,
+              autofillHints: const [AutofillHints.email],
+              decoration: InputDecoration(
+                labelText: 'Email',
+                border: const OutlineInputBorder(),
+                errorText: emailError,
+              ),
             ),
             const SizedBox(height: 20.0),
             TextField(
               controller: passwordController,
               obscureText: true,
-              decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: 'Password',
+                border: const OutlineInputBorder(),
+                errorText: passwordError,
+              ),
             ),
             const SizedBox(height: 10.0),
             Align(
