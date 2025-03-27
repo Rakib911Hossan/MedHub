@@ -98,7 +98,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 _buildTextField(_ageController, 'Age', isNumeric: true),
                 _buildTextField(_genderController, 'Gender'),
                 _buildTextField(_addressController, 'Address'),
-                // _buildTextField(_roleController, 'Role'),
+                if (widget.userData?['role'] == 'admin')
+                  _buildTextField(_roleController, 'Role'),
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _updateUserInfo,
