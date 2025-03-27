@@ -12,60 +12,69 @@ class AddMedicine extends StatefulWidget {
 class _AddMedicineState extends State<AddMedicine> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _imageController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
   final TextEditingController _genericGroupController = TextEditingController();
 
-  final CollectionReference medicinesCollection = FirebaseFirestore.instance
-      .collection('medicines');
+  double _totalPrice = 0.0;
+
+  final CollectionReference medicinesCollection =
+      FirebaseFirestore.instance.collection('medicines');
+
+  void _calculateTotalPrice() {
+    double price = double.tryParse(_priceController.text) ?? 0.0;
+    int quantity = int.tryParse(_quantityController.text) ?? 0;
+    setState(() {
+      _totalPrice = price * quantity;
+    });
+  }
 
   Future<void> _addMedicine() async {
     String name = _nameController.text.trim();
     String price = _priceController.text.trim();
+    String quantity = _quantityController.text.trim();
     String image = _imageController.text.trim();
     String category = _categoryController.text.trim();
     String company = _companyController.text.trim();
     String genericGroup = _genericGroupController.text.trim();
-    String? uid =
-        FirebaseAuth.instance.currentUser?.uid; // Get logged-in user ID
+    String? uid = FirebaseAuth.instance.currentUser?.uid;
 
     if (name.isEmpty ||
         price.isEmpty ||
+        quantity.isEmpty ||
         category.isEmpty ||
         company.isEmpty ||
         genericGroup.isEmpty ||
         uid == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('All fields are required!')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('All fields are required!')));
       return;
     }
 
     try {
       await medicinesCollection.add({
-        'uid': uid, // User ID
+        'uid': uid,
         'name': name,
         'price': double.tryParse(price) ?? 0.0,
-        'image':
-            image.isNotEmpty
-                ? image
-                : "https://via.placeholder.com/150", // Default placeholder if no image
+        'quantity': int.tryParse(quantity) ?? 0,
+        'total_price': _totalPrice,
+        'image': image.isNotEmpty ? image : "https://via.placeholder.com/150",
         'category': category,
         'company': company,
         'generic_group': genericGroup,
-        'timestamp': FieldValue.serverTimestamp(), // Firestore timestamp
+        'timestamp': FieldValue.serverTimestamp(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Medicine added successfully!')),
       );
 
-      Navigator.pop(context); // Go back after adding medicine
+      Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error adding medicine: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding medicine: $e')));
     }
   }
 
@@ -85,7 +94,16 @@ class _AddMedicineState extends State<AddMedicine> {
             TextField(
               controller: _priceController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Price'),
+              decoration:
+                  const InputDecoration(labelText: 'Price for each medicine'),
+              onChanged: (value) => _calculateTotalPrice(),
+            ),
+            TextField(
+              controller: _quantityController,
+              keyboardType: TextInputType.number,
+              decoration:
+                  const InputDecoration(labelText: 'Quantity of medicine'),
+              onChanged: (value) => _calculateTotalPrice(),
             ),
             TextField(
               controller: _imageController,
@@ -104,6 +122,14 @@ class _AddMedicineState extends State<AddMedicine> {
             TextField(
               controller: _genericGroupController,
               decoration: const InputDecoration(labelText: 'Generic Group'),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: TextEditingController(text: _totalPrice.toString()),
+              enabled: false, // Disable editing
+              decoration: const InputDecoration(
+                labelText: 'Total Price (auto-calculated)',
+              ),
             ),
             const SizedBox(height: 20),
             ElevatedButton(
