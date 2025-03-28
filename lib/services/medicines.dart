@@ -144,7 +144,7 @@ class _MedicinesState extends State<Medicines> {
     return Card(
       elevation: 3,
       color: getRandomColor(medicine.id),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: Padding(
         padding: const EdgeInsets.only(
           top: 12.0,
@@ -153,8 +153,8 @@ class _MedicinesState extends State<Medicines> {
           children: [
             Container(
               height: 80,
-              width: 100,
-              margin: const EdgeInsets.only(bottom: 8), // Added bottom margin
+              width: 130,
+              margin: const EdgeInsets.only(bottom: 4), // Added bottom margin
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(
                   8,
@@ -182,7 +182,7 @@ class _MedicinesState extends State<Medicines> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Text(
                 medicine['name'] ?? 'Unknown Medicine',
                 style: const TextStyle(
@@ -197,8 +197,8 @@ class _MedicinesState extends State<Medicines> {
             Padding(
               padding: const EdgeInsets.only(top: 4.0),
               child: Text(
-                "BDT ${medicine['price'] ?? 'N/A'}",
-                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                "Price: BDT ${medicine['price'] ?? 'N/A'}",
+                style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.bold,),
               ),
             ),
             Row(
