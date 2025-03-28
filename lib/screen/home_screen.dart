@@ -2,7 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:new_project/services/medicines.dart';
-import 'package:new_project/services/profile_screen.dart';
+import 'package:new_project/users/profile_screen.dart';
+import 'package:new_project/users/user_list';
 import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -24,14 +25,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchUserRole() async {
     if (user != null) {
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('user_info')
-          .doc(user!.uid)
-          .get();
+      DocumentSnapshot userDoc =
+          await FirebaseFirestore.instance
+              .collection('user_info')
+              .doc(user!.uid)
+              .get();
 
       if (userDoc.exists) {
         setState(() {
-          userRole = userDoc['role'] ?? 'user'; // Default to 'user' if role is missing
+          userRole =
+              userDoc['role'] ?? 'user'; // Default to 'user' if role is missing
         });
       }
     }
@@ -43,10 +46,11 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text("Home"),
         leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
+          builder:
+              (context) => IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
         ),
       ),
       drawer: Drawer(
@@ -86,9 +90,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => const Medicines(),
-                    ),
+                    MaterialPageRoute(builder: (context) => const Medicines()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.account_circle),
+                title: const Text('Users'),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const Users()),
                   );
                 },
               ),

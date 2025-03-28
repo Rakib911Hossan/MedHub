@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddMedicine extends StatefulWidget {
   const AddMedicine({super.key});
@@ -20,8 +23,8 @@ class _AddMedicineState extends State<AddMedicine> {
 
   double _totalPrice = 0.0;
 
-  final CollectionReference medicinesCollection =
-      FirebaseFirestore.instance.collection('medicines');
+  final CollectionReference medicinesCollection = FirebaseFirestore.instance
+      .collection('medicines');
 
   void _calculateTotalPrice() {
     double price = double.tryParse(_priceController.text) ?? 0.0;
@@ -48,8 +51,9 @@ class _AddMedicineState extends State<AddMedicine> {
         company.isEmpty ||
         genericGroup.isEmpty ||
         uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('All fields are required!')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('All fields are required!')));
       return;
     }
 
@@ -73,8 +77,9 @@ class _AddMedicineState extends State<AddMedicine> {
 
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding medicine: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error adding medicine: $e')));
     }
   }
 
@@ -87,6 +92,70 @@ class _AddMedicineState extends State<AddMedicine> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child: Column(
+                children: [
+                  Stack(
+                    alignment:
+                        Alignment
+                            .bottomRight, // Position the icon at the bottom-right
+                    children: [
+                      // Container for the image with border radius
+                      Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(
+                            12,
+                          ), // Adjust the radius as needed
+                          border: Border.all(
+                            color: Colors.grey.withOpacity(
+                              0.3,
+                            ), // Optional border color
+                            width: 1, // Optional border width
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                            12,
+                          ), // Same radius as container
+                          child:
+                              _imageController.text.isNotEmpty
+                                  ? Image.file(
+                                    File(_imageController.text),
+                                    height: 150,
+                                    width: 150,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'lib/assets/order_medicine.jpg',
+                                        height: 150,
+                                        width: 150,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  )
+                                  : Image.asset(
+                                    'lib/assets/order_medicine.jpg',
+                                    height: 150,
+                                    width: 150,
+                                    fit: BoxFit.cover,
+                                  ),
+                        ),
+                      ),
+                      const SizedBox(
+                        height: 8,
+                      ), // Added spacing between image and button
+                      IconButton(
+                        icon: Icon(
+                          Icons.edit,
+                          color: const Color.fromARGB(255, 14, 138, 111),
+                        ),
+                        onPressed: _selectImage,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             TextField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: 'Medicine Name'),
@@ -94,22 +163,18 @@ class _AddMedicineState extends State<AddMedicine> {
             TextField(
               controller: _priceController,
               keyboardType: TextInputType.number,
-              decoration:
-                  const InputDecoration(labelText: 'Price for each medicine'),
+              decoration: const InputDecoration(
+                labelText: 'Price for each medicine',
+              ),
               onChanged: (value) => _calculateTotalPrice(),
             ),
             TextField(
               controller: _quantityController,
               keyboardType: TextInputType.number,
-              decoration:
-                  const InputDecoration(labelText: 'Quantity of medicine'),
-              onChanged: (value) => _calculateTotalPrice(),
-            ),
-            TextField(
-              controller: _imageController,
               decoration: const InputDecoration(
-                labelText: 'Image URL (optional)',
+                labelText: 'Quantity of medicine',
               ),
+              onChanged: (value) => _calculateTotalPrice(),
             ),
             TextField(
               controller: _categoryController,
@@ -140,5 +205,21 @@ class _AddMedicineState extends State<AddMedicine> {
         ),
       ),
     );
+  }
+
+  Future<void> _selectImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (pickedFile != null) {
+      setState(() {
+        _imageController.text =
+            pickedFile.path; // Store the file path in the controller
+      });
+    } else {
+      print('No image selected');
+    }
   }
 }
