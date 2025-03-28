@@ -75,49 +75,24 @@ class _MedicinesState extends State<Medicines> {
               Icons.search_rounded,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
-            suffixIcon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, animation) {
-                return ScaleTransition(scale: animation, child: child);
-              },
-              child:
-                  searchQuery.isNotEmpty
-                      ? IconButton(
-                        key: const ValueKey('clear-button'),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        onPressed: () {
-                          searchController.clear();
-                          setState(() {
-                            searchQuery = '';
-                          });
-                          FocusScope.of(context).unfocus();
-                        },
-                      )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
-            ),
+          suffixIcon:
+                searchQuery.isNotEmpty
+                    ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        searchController.clear();
+                        setState(() => searchQuery = '');
+                        FocusScope.of(context).unfocus();
+                      },
+                    )
+                    : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 16,
-          ),
-          onChanged: (value) {
-            setState(() {
-              searchQuery = value.toLowerCase();
-            });
-          },
-          onTapOutside: (_) {
-            FocusScope.of(context).unfocus();
-          },
+          onChanged:
+              (value) => setState(() => searchQuery = value.toLowerCase()),
         ),
       ),
     );
