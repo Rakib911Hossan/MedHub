@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -80,27 +83,60 @@ class _OrderMedicineState extends State<OrderMedicine> {
 
   Widget _buildMedicineCard(DocumentSnapshot medicine) {
     final data = medicine.data() as Map<String, dynamic>;
+    final Map<String, Color> medicineColors = {};
+    
+    Color getRandomColor(String medicineId) {
+      if (!medicineColors.containsKey(medicineId)) {
+        final Random random = Random();
+
+        // Generate random pastel colors by mixing with white
+        medicineColors[medicineId] = Color.fromRGBO(
+          200 + random.nextInt(55), // R: 200-255
+          200 + random.nextInt(55), // G: 200-255
+          200 + random.nextInt(55), // B: 200-255
+          0.8, // 80% opacity
+        );
+      }
+      return medicineColors[medicineId]!;
+    }
 
     return SizedBox(
-      width: 160,
+      width: 170,
       child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+         elevation: 3,
+      color: getRandomColor(medicine.id),
+      margin: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Image Section
             Container(
-              height: 90,
+              height: 99,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(12),
+                borderRadius: BorderRadius.circular(
+                  8,
                 ),
                 color: Colors.grey.shade200,
               ),
-              child: _buildMedicineImage(data['image']),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child:
+                    medicine['image'] != null && medicine['image'].isNotEmpty
+                        ? Image.file(
+                          File(medicine['image']),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'lib/assets/order_medicine.jpg',
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        )
+                        : Image.asset(
+                          'lib/assets/order_medicine.jpg',
+                          fit: BoxFit.cover,
+                        ),
+              ),
             ),
 
             // Details Section
@@ -171,6 +207,7 @@ class _OrderMedicineState extends State<OrderMedicine> {
         ),
       ),
     );
+
   }
 
   Widget _buildCategorySection(
