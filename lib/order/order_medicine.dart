@@ -14,7 +14,8 @@ class OrderMedicine extends StatefulWidget {
 class _OrderMedicineState extends State<OrderMedicine> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CollectionReference medicinesCollection = FirebaseFirestore.instance
+      .collection('medicines');
 
   @override
   void dispose() {
@@ -60,31 +61,10 @@ class _OrderMedicineState extends State<OrderMedicine> {
     );
   }
 
-  Widget _buildMedicineImage(String? imageUrl) {
-    if (imageUrl == null || imageUrl.isEmpty) {
-      return const Center(child: Icon(Icons.medication, size: 40));
-    }
-
-    // Handle both network and file paths
-    if (imageUrl.startsWith('http')) {
-      return Image.network(
-        imageUrl,
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => _buildPlaceholderImage(),
-      );
-    } else {
-      return _buildPlaceholderImage();
-    }
-  }
-
-  Widget _buildPlaceholderImage() {
-    return const Center(child: Icon(Icons.medication, size: 40));
-  }
-
   Widget _buildMedicineCard(DocumentSnapshot medicine) {
     final data = medicine.data() as Map<String, dynamic>;
     final Map<String, Color> medicineColors = {};
-    
+
     Color getRandomColor(String medicineId) {
       if (!medicineColors.containsKey(medicineId)) {
         final Random random = Random();
@@ -103,9 +83,9 @@ class _OrderMedicineState extends State<OrderMedicine> {
     return SizedBox(
       width: 170,
       child: Card(
-         elevation: 3,
-      color: getRandomColor(medicine.id),
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+        elevation: 3,
+        color: getRandomColor(medicine.id),
+        margin: const EdgeInsets.symmetric(horizontal: 8),
         child: Column(
           children: [
             // Image Section
@@ -113,9 +93,7 @@ class _OrderMedicineState extends State<OrderMedicine> {
               height: 99,
               width: double.infinity,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(
-                  8,
-                ),
+                borderRadius: BorderRadius.circular(8),
                 color: Colors.grey.shade200,
               ),
               child: ClipRRect(
@@ -169,7 +147,7 @@ class _OrderMedicineState extends State<OrderMedicine> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                      ),  
+                      ),
                     ],
                   ),
 
@@ -207,7 +185,6 @@ class _OrderMedicineState extends State<OrderMedicine> {
         ),
       ),
     );
-
   }
 
   Widget _buildCategorySection(
@@ -258,47 +235,87 @@ class _OrderMedicineState extends State<OrderMedicine> {
           _buildSearchBar(),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  _searchQuery.isEmpty
-                      ? _firestore
-                          .collection('medicines')
-                          .orderBy('category')
-                          .snapshots()
-                      : _firestore
-                          .collection('medicines')
-                          .where('searchKeywords', arrayContains: _searchQuery)
-                          .snapshots(),
+              stream: medicinesCollection.snapshots(),
               builder: (context, snapshot) {
+                // Handle loading state
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError ||
-                    !snapshot.hasData ||
-                    snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('No medicines found'));
+
+                // Handle error state
+                if (snapshot.hasError) {
+                  return const Center(
+                    child: Text(
+                      'Error loading medicines',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  );
                 }
 
+                // Handle no data state
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _searchQuery.isEmpty
+                          ? 'No medicines available'
+                          : 'No medicines found',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  );
+                }
+
+                final allMedicines = snapshot.data!.docs;
+
+                // If searching, show filtered results
+                if (_searchQuery.isNotEmpty) {
+                  return _buildSearchResults(allMedicines);
+                }
+
+                // Otherwise group by category
                 final medicinesByCategory = <String, List<DocumentSnapshot>>{};
-                for (final doc in snapshot.data!.docs) {
-                  final category = doc['category'] ?? 'Uncategorized';
+                for (final doc in allMedicines) {
+                  final category =
+                      doc['category'] as String? ?? 'Uncategorized';
                   medicinesByCategory.putIfAbsent(category, () => []).add(doc);
                 }
 
                 return ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children:
-                      medicinesByCategory.entries
-                          .map(
-                            (entry) =>
-                                _buildCategorySection(entry.key, entry.value),
-                          )
-                          .toList(),
+                      medicinesByCategory.entries.map((entry) {
+                        return _buildCategorySection(entry.key, entry.value);
+                      }).toList(),
                 );
               },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSearchResults(List<DocumentSnapshot> medicines) {
+    final filteredMedicines =
+        medicines.where((medicine) {
+          final name = medicine['name']?.toString().toLowerCase() ?? '';
+          final generic =
+              medicine['generic_group']?.toString().toLowerCase() ?? '';
+          return name.contains(_searchQuery.toLowerCase()) ||
+              generic.contains(_searchQuery.toLowerCase());
+        }).toList();
+
+    if (filteredMedicines.isEmpty) {
+      return Center(
+        child: Text(
+          'No medicines found for "$_searchQuery"',
+          style: const TextStyle(fontSize: 16),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [_buildCategorySection('Search Results', filteredMedicines)],
     );
   }
 }
