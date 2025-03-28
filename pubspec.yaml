@@ -69,6 +69,8 @@ flutter:
     - lib/assets/v987-18a.jpg
     - lib/assets/doctor.jpg
     - lib/assets/order_medicine.jpg
+    - lib/assets/medicine.png
+    - lib/assets/report_7127943.png
 
   #   - images/a_dot_ham.jpeg
 
