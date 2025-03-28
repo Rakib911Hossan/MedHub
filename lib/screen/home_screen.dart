@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/services/medicines.dart';
 import 'package:new_project/users/profile_screen.dart';
 import 'package:new_project/users/user_list';
@@ -197,9 +198,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     'lib/assets/medicine.png',
                     'Order Medicine',
                     'Get your medicines delivered to your door',
-                     const Color.fromARGB(255, 226, 189, 178), // Light pink
+                    const Color.fromARGB(255, 226, 189, 178), // Light pink
                     () {
-                      // Navigation for order medicine
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const OrderMedicine(),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 20),
@@ -223,85 +229,79 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildServiceCard(
-  BuildContext context,
-  String imagePath, 
-  String title,
-  String description,
-  Color backgroundColor,
-  VoidCallback onTap,
-) {
-  // Determine text color based on background brightness
-  final bool isLightBackground = backgroundColor.computeLuminance() > 0.5;
-  final Color textColor = isLightBackground ? Colors.black87 : Colors.white;
-  final Color secondaryTextColor = isLightBackground ? Colors.black54 : Colors.white70;
+    BuildContext context,
+    String imagePath,
+    String title,
+    String description,
+    Color backgroundColor,
+    VoidCallback onTap,
+  ) {
+    // Determine text color based on background brightness
+    final bool isLightBackground = backgroundColor.computeLuminance() > 0.5;
+    final Color textColor = isLightBackground ? Colors.black87 : Colors.white;
+    final Color secondaryTextColor =
+        isLightBackground ? Colors.black54 : Colors.white70;
 
-  return Card(
-    elevation: 4,
-    color: backgroundColor,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16.0),
-        width: double.infinity,
-        height: 150,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: Colors.white.withOpacity(isLightBackground ? 0.1 : 0.3),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(
-                      Icons.medication,
-                      size: 40,
-                      color: textColor,
-                    );
-                  },
+    return Card(
+      elevation: 4,
+      color: backgroundColor,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          width: double.infinity,
+          height: 150,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white.withOpacity(
+                    isLightBackground ? 0.1 : 0.3,
+                  ),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.asset(
+                    imagePath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Icon(Icons.medication, size: 40, color: textColor);
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    description,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: secondaryTextColor,
+                    const SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: TextStyle(fontSize: 14, color: secondaryTextColor),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 }
