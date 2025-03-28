@@ -15,26 +15,36 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final User? user = FirebaseAuth.instance.currentUser;
-  String userRole = '';
+  String userRole = 'user';
+  String userName = 'User';
 
   @override
   void initState() {
     super.initState();
-    _fetchUserRole();
+    _fetchUserData();
   }
 
-  Future<void> _fetchUserRole() async {
+  Future<void> _fetchUserData() async {
     if (user != null) {
-      DocumentSnapshot userDoc =
-          await FirebaseFirestore.instance
-              .collection('user_info')
-              .doc(user!.uid)
-              .get();
+      try {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('user_info')
+            .doc(user!.uid)
+            .get();
 
-      if (userDoc.exists) {
+        if (userDoc.exists) {
+          setState(() {
+            userRole = userDoc['role'] ?? 'user';
+            userName = userDoc['name'] ?? 
+                      user?.displayName ?? 
+                      user?.email?.split('@').first ?? 
+                      'User';
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching user data: $e');
         setState(() {
-          userRole =
-              userDoc['role'] ?? 'user'; // Default to 'user' if role is missing
+          userName = user?.email?.split('@').first ?? 'User';
         });
       }
     }
@@ -46,11 +56,10 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text("Home"),
         leading: Builder(
-          builder:
-              (context) => IconButton(
-                icon: const Icon(Icons.menu),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
         ),
       ),
       drawer: Drawer(
@@ -58,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text(user?.email ?? 'Guest'),
+              accountName: Text(userName),
               accountEmail: Text(user?.email ?? ''),
               currentAccountPicture: const CircleAvatar(
                 child: Icon(Icons.person),
@@ -83,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
-            if (userRole == 'admin') // Only show this if user is an admin
+            if (userRole == 'admin')
               ListTile(
                 leading: const Icon(Icons.medication),
                 title: const Text('Medicines'),
@@ -94,6 +103,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                 },
               ),
+            if (userRole == 'admin')
               ListTile(
                 leading: const Icon(Icons.account_circle),
                 title: const Text('Users'),
@@ -118,59 +128,94 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text("Welcome, ${user?.email ?? 'Guest'}"),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
-                  // Navigate to order medicine screen
-                },
-                child: Card(
-                  elevation: 5.0,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(
-                        'lib/assets/order_medicine.jpg',
-                        height: 100,
-                        width: 100,
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Order Medicine',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
+        body: SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0, top: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Hello, $userName",
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "We are here to help you connect with your doctor and get your medicines",
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Theme.of(context).hintColor,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () {
-                  // Navigate to consult doctor screen
-                },
-                child: Card(
-                  elevation: 5.0,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Image.asset(
-                        'lib/assets/doctor.jpg',
-                        height: 100,
-                        width: 100,
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Consult Doctor',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  ),
+            ),
+            const SizedBox(height: 32),
+            // Vertical cards layout
+            Column(
+              children: [
+                _buildServiceCard(
+                  context,
+                  'lib/assets/order_medicine.jpg',
+                  'Order Medicine',
+                  () {
+                    // Navigation for order medicine
+                  },
+                ),
+                const SizedBox(height: 20),
+                _buildServiceCard(
+                  context,
+                  'lib/assets/doctor.jpg',
+                  'Consult Doctor',
+                  () {
+                    // Navigation for consult doctor
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+  Widget _buildServiceCard(
+    BuildContext context,
+    String imagePath,
+    String title,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              Image.asset(
+                imagePath,
+                height: 100,
+                width: 100,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],
