@@ -20,6 +20,7 @@ class _AddMedicineState extends State<AddMedicine> {
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
   final TextEditingController _genericGroupController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   double _totalPrice = 0.0;
 
@@ -42,6 +43,7 @@ class _AddMedicineState extends State<AddMedicine> {
     String category = _categoryController.text.trim();
     String company = _companyController.text.trim();
     String genericGroup = _genericGroupController.text.trim();
+    String description = _descriptionController.text.trim();
     String? uid = FirebaseAuth.instance.currentUser?.uid;
 
     if (name.isEmpty ||
@@ -49,6 +51,7 @@ class _AddMedicineState extends State<AddMedicine> {
         quantity.isEmpty ||
         category.isEmpty ||
         company.isEmpty ||
+        description.isEmpty ||
         genericGroup.isEmpty ||
         uid == null) {
       ScaffoldMessenger.of(
@@ -68,6 +71,9 @@ class _AddMedicineState extends State<AddMedicine> {
         'category': category,
         'company': company,
         'generic_group': genericGroup,
+        'description': description,
+        'created_at': DateTime.now(),
+        'updated_at': DateTime.now(),
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -187,6 +193,10 @@ class _AddMedicineState extends State<AddMedicine> {
             TextField(
               controller: _genericGroupController,
               decoration: const InputDecoration(labelText: 'Generic Group'),
+            ),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
             ),
             const SizedBox(height: 10),
             TextField(

@@ -22,6 +22,7 @@ class _EditMedicineState extends State<EditMedicine> {
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
   final TextEditingController _genericGroupController = TextEditingController();
+   final TextEditingController _descriptionController = TextEditingController();
 
   bool _isLoading = false;
 
@@ -50,6 +51,7 @@ class _EditMedicineState extends State<EditMedicine> {
           _categoryController.text = medicine['category'] ?? '';
           _companyController.text = medicine['company'] ?? '';
           _genericGroupController.text = medicine['generic_group'] ?? '';
+          _descriptionController.text = medicine['description'] ?? '';
         });
         _calculateTotalPrice();
       }
@@ -85,6 +87,9 @@ class _EditMedicineState extends State<EditMedicine> {
             'category': _categoryController.text,
             'company': _companyController.text,
             'generic_group': _genericGroupController.text,
+            'description': _descriptionController.text,
+            'updated_at': DateTime.now(),
+            // Use server timestamp for consistency
             'timestamp': FieldValue.serverTimestamp(),
           });
 
@@ -286,6 +291,15 @@ class _EditMedicineState extends State<EditMedicine> {
                           controller: _genericGroupController,
                           decoration: const InputDecoration(
                             labelText: 'Generic Group',
+                          ),
+                          validator:
+                              (value) =>
+                                  value!.isEmpty ? 'Required field' : null,
+                        ),
+                        TextFormField(
+                          controller: _descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
                           ),
                           validator:
                               (value) =>
