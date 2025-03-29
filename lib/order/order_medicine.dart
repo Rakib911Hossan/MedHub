@@ -1,8 +1,10 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:new_project/order/add_to_cart.dart';
 
 class OrderMedicine extends StatefulWidget {
   const OrderMedicine({super.key});
@@ -159,8 +161,6 @@ class _OrderMedicineState extends State<OrderMedicine> {
                       color: Colors.green,
                     ),
                   ),
-
-                  // const SizedBox(height: 1),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -171,7 +171,19 @@ class _OrderMedicineState extends State<OrderMedicine> {
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 8),
                       ),
-                      onPressed: () => _addToCart(data),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (context) => MedicineDetailsPage(
+                                  medicineId: medicine.id,
+                                  medicine:
+                                      medicine.data() as Map<String, dynamic>,
+                                ),
+                          ),
+                        );
+                      },
                       child: const Text(
                         'Add to Cart',
                         style: TextStyle(fontSize: 12, color: Colors.white),
@@ -216,10 +228,6 @@ class _OrderMedicineState extends State<OrderMedicine> {
         const SizedBox(height: 16),
       ],
     );
-  }
-
-  void _addToCart(Map<String, dynamic> medicineData) {
-    debugPrint('Added to cart: ${medicineData['name']}');
   }
 
   @override
