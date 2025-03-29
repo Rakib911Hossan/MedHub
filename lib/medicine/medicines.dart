@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:new_project/services/add_medicines.dart';
-import 'package:new_project/services/edit_medicine.dart';
+import 'package:new_project/medicine/add_medicines.dart';
+import 'package:new_project/medicine/edit_medicine.dart';
 
 class Medicines extends StatefulWidget {
   const Medicines({super.key});

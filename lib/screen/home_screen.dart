@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:new_project/order/order_medicine.dart';
-import 'package:new_project/services/medicines.dart';
+import 'package:new_project/medicine/medicines.dart';
 import 'package:new_project/users/profile_screen.dart';
 import 'package:new_project/users/user_list';
 import 'login_screen.dart';
