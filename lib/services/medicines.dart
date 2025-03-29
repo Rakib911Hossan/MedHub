@@ -165,7 +165,7 @@ class _MedicinesState extends State<Medicines> {
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -173,8 +173,12 @@ class _MedicinesState extends State<Medicines> {
               padding: const EdgeInsets.only(top: 4.0),
               child: Text(
                 "Price: BDT ${medicine['price'] ?? 'N/A'}",
-                style: TextStyle(fontSize: 13, color: Colors.grey[700], fontWeight: FontWeight.bold,),
+                style: TextStyle(fontSize: 13, color: Colors.grey[700],
+                 fontWeight: FontWeight.bold,),
+                 maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
+              
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
