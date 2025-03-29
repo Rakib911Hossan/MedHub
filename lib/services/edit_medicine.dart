@@ -16,8 +16,13 @@ class _EditMedicineState extends State<EditMedicine> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+final TextEditingController _discountPercentController = TextEditingController();
+  final TextEditingController _discountedAmountEachController = TextEditingController();
+  final TextEditingController _discountedPriceEachController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _totalPriceController = TextEditingController();
+  final TextEditingController _totalDiscountedAmountController = TextEditingController();
+  final TextEditingController _totalDiscountedPriceController = TextEditingController();
   final TextEditingController _imageController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
@@ -52,6 +57,11 @@ class _EditMedicineState extends State<EditMedicine> {
           _companyController.text = medicine['company'] ?? '';
           _genericGroupController.text = medicine['generic_group'] ?? '';
           _descriptionController.text = medicine['description'] ?? '';
+          _discountPercentController.text = medicine['discount_percent'].toString();
+          _discountedAmountEachController.text = medicine['discount_amount'].toString();
+          _discountedPriceEachController.text = medicine['discount_price'].toString();
+          _totalDiscountedAmountController.text = medicine['total_discount_amount'].toString();
+          _totalDiscountedPriceController.text = medicine['total_discount_price'].toString();
         });
         _calculateTotalPrice();
       }
@@ -65,9 +75,16 @@ class _EditMedicineState extends State<EditMedicine> {
 
   void _calculateTotalPrice() {
     double price = double.tryParse(_priceController.text) ?? 0.0;
+    double discountPercent = double.tryParse(_discountPercentController.text) ?? 0.0;
+    double discountedAmountEach = double.tryParse(_discountedAmountEachController.text) ?? 0.0;
+    double discountedPriceEach = double.tryParse(_discountedPriceEachController.text) ?? 0.0;
     int quantity = int.tryParse(_quantityController.text) ?? 1;
     setState(() {
+      _discountedAmountEachController.text = ((price * discountPercent) / 100).toString();
+      _discountedPriceEachController.text = (price - ((price * discountPercent) / 100)).toString();
       _totalPriceController.text = (price * quantity).toString();
+      _totalDiscountedAmountController.text = (discountedAmountEach * quantity).toString();
+      _totalDiscountedPriceController.text = (discountedPriceEach * quantity).toString();
     });
   }
 
@@ -81,8 +98,13 @@ class _EditMedicineState extends State<EditMedicine> {
           .update({
             'name': _nameController.text,
             'price': double.tryParse(_priceController.text) ?? 0.0,
+            'discount_percent': double.tryParse(_discountPercentController.text) ?? 0.0,
+            'discount_amount': double.tryParse(_discountedAmountEachController.text) ?? 0.0,
+            'discount_price_each': double.tryParse(_discountedPriceEachController.text) ?? 0.0,
             'quantity': int.tryParse(_quantityController.text) ?? 1,
             'total_price': double.tryParse(_totalPriceController.text) ?? 0.0,
+            'total_discount_amount': double.tryParse(_totalDiscountedAmountController.text) ?? 0.0,
+            'total_discount_price': double.tryParse(_totalDiscountedPriceController.text) ?? 0.0,
             'image': _imageController.text,
             'category': _categoryController.text,
             'company': _companyController.text,
@@ -128,11 +150,19 @@ class _EditMedicineState extends State<EditMedicine> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Text(
+                'Discounted Price Each: ${_discountedPriceEachController.text}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
                 'Quantity: ${_quantityController.text}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               Text(
                 'Total Price: ${_totalPriceController.text}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'Total Discounted Price: ${_totalDiscountedPriceController.text}',
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
@@ -259,16 +289,41 @@ class _EditMedicineState extends State<EditMedicine> {
                                   value!.isEmpty ? 'Required field' : null,
                         ),
                         TextFormField(
-                          controller: _quantityController,
+                          controller: _discountPercentController,
                           keyboardType: TextInputType.number,
                           decoration: const InputDecoration(
-                            labelText: 'Quantity',
+                            labelText: 'Discount Percent',
                           ),
                           onChanged: (_) => _calculateTotalPrice(),
                           validator:
                               (value) =>
                                   value!.isEmpty ? 'Required field' : null,
                         ),
+                        TextFormField(
+                          controller: _discountedAmountEachController,
+                          enabled: false,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Discounted Amount Each',
+                          ),
+                          onChanged: (_) => _calculateTotalPrice(),
+                          validator:
+                              (value) =>
+                                  value!.isEmpty ? 'Required field' : null,
+                        ),
+                        TextFormField(
+                          controller: _discountedPriceEachController,
+                          enabled: false,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Discounted Price Each',
+                          ),
+                          onChanged: (_) => _calculateTotalPrice(),
+                          validator:
+                              (value) =>
+                                  value!.isEmpty ? 'Required field' : null,
+                        ),
+                       
                         TextFormField(
                           controller: _categoryController,
                           decoration: const InputDecoration(
@@ -305,9 +360,33 @@ class _EditMedicineState extends State<EditMedicine> {
                               (value) =>
                                   value!.isEmpty ? 'Required field' : null,
                         ),
-                        const SizedBox(height: 10),
+                         TextFormField(
+                          controller: _quantityController,
+                          keyboardType: TextInputType.number,
+                          decoration: const InputDecoration(
+                            labelText: 'Quantity',
+                          ),
+                          onChanged: (_) => _calculateTotalPrice(),
+                          validator:
+                              (value) =>
+                                  value!.isEmpty ? 'Required field' : null,
+                        ),
                         Text(
                           'Total Price: ${_totalPriceController.text}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Total Discounted Amount: ${_totalDiscountedAmountController.text}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Total Discounted Price: ${_totalDiscountedPriceController.text}',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
