@@ -59,7 +59,7 @@ final TextEditingController _discountPercentController = TextEditingController()
           _descriptionController.text = medicine['description'] ?? '';
           _discountPercentController.text = medicine['discount_percent'].toString();
           _discountedAmountEachController.text = medicine['discount_amount'].toString();
-          _discountedPriceEachController.text = medicine['discount_price'].toString();
+          _discountedPriceEachController.text = medicine['discount_price_each'].toString();
           _totalDiscountedAmountController.text = medicine['total_discount_amount'].toString();
           _totalDiscountedPriceController.text = medicine['total_discount_price'].toString();
         });

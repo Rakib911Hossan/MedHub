@@ -80,7 +80,7 @@ class _AddMedicineState extends State<AddMedicine> {
         'quantity': int.tryParse(quantity) ?? 0,
         'discount_percent': double.tryParse(discountPercent) ?? 0.0,
         'discount_amount': _discountAmountEach,
-        'discount_price': _discountedPriceEach,
+        'discount_price_each': _discountedPriceEach,
         'total_discount_amount': _totalDiscountAmount,
         'total_discount_price': _totalDiscountedPrice,
         'total_price': _totalPrice,
