@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/order/deliveryAddress.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -14,6 +15,15 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   final user = FirebaseAuth.instance.currentUser;
 
+  Future<Map<String, dynamic>?> _getUserData() async {
+    if (user == null) return null;
+    final doc = await FirebaseFirestore.instance
+        .collection('user_info')
+        .doc(user!.uid)
+        .get();
+    return doc.data();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,9 +31,46 @@ class _CartPageState extends State<CartPage> {
         title: const Text('Your Cart'),
         centerTitle: true,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.check_circle),
-            onPressed: _confirmCart,
+          Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: GestureDetector(
+           onTap: () async {
+                final userData = await _getUserData();
+                if (userData == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User not found')),
+                  );
+                  return;
+                }
+                
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => DeliveryAddressPage(
+                      user: user!,
+                      initialAddress: userData['address'] ?? '',
+                      initialPhone: userData['phone']?.toString() ?? '',
+                    ),
+                  ),
+                );
+                
+                if (result != null && mounted) {
+                  setState(() {
+                    // Update local state if needed
+                  });
+                }
+              },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+          Icon(Icons.home),
+          Text(
+            'Address',
+            style: TextStyle(fontSize: 10),
+          ),
+            ],
+          ),
+        ),
           ),
         ],
       ),
@@ -237,10 +284,10 @@ class _CartPageState extends State<CartPage> {
         
         const SizedBox(height: 16),
         SizedBox(
-          width: double.infinity,
+          width: 188,
           child: ElevatedButton(
             onPressed: _confirmCart,
-            child: const Text('Proceed to Checkout'),
+            child: const Text('Comfirm Order'),
           ),
         ),
       ],
