@@ -62,7 +62,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
         _showSnackBar('Please sign in to add items to cart');
         return;
       }
-
+      final cartId = 'CRT${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
       final medicineName =
           widget.medicine['name']?.toString() ?? 'Unknown Medicine';
       final company = widget.medicine['company']?.toString() ?? '';
@@ -138,6 +138,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           // Create new cart with this item
           transaction.set(cartRef, {
             'uid': user.uid,
+            'cartId': cartId,
             'medicines': [newCartItem],
             'whole_cart_discount_price': discountPrice * _quantity,
             'whole_cart_total_price': price * _quantity,
