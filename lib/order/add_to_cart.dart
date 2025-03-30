@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'package:badges/badges.dart' as custom_badge;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/order/cartPage.dart';
 
 class MedicineDetailsPage extends StatefulWidget {
   final String medicineId;
@@ -19,11 +21,12 @@ class MedicineDetailsPage extends StatefulWidget {
 
 class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
   int _quantity = 1;
+  int _cartItemCount = 0; // Initialize cart item count
   DocumentSnapshot? medicineSnapshot;
   int _currentStep = 1; // Moved to state
   late final TextEditingController _stepController = TextEditingController(
-      text: '1',
-    );
+    text: '1',
+  );
 
   @override
   void initState() {
@@ -64,6 +67,14 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           widget.medicine['name']?.toString() ?? 'Unknown Medicine';
       final company = widget.medicine['company']?.toString() ?? '';
       final price = (widget.medicine['price'] as num?)?.toDouble() ?? 0.0;
+      final availableQuantity =
+          (widget.medicine['quantity'] as num?)?.toInt() ?? 0;
+      if (_quantity > availableQuantity) {
+        _showSnackBar(
+          'Only $availableQuantity items available. Please reduce the quantity.',
+        );
+        return;
+      }
       final discountPrice =
           (widget.medicine['discount_price_each'] as num?)?.toDouble() ?? 0.0;
 
@@ -171,7 +182,6 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
 
   Widget _buildQuantitySelector() {
     // Initialize with step 1
-    
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -216,7 +226,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
                     isDense: true,
                   ),
                   onChanged: (value) {
-                    final newStep = int.tryParse(value) ?? 0 ;
+                    final newStep = int.tryParse(value) ?? 0;
                     if (newStep >= 1) {
                       _currentStep = newStep;
                       _stepController.text =
@@ -306,6 +316,21 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
     );
   }
 
+Stream<int> _getCartItemCount() {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return Stream.value(0);
+  
+  return FirebaseFirestore.instance
+      .collection('carts')
+      .doc(user.uid)
+      .snapshots()
+      .map((snapshot) {
+        if (!snapshot.exists) return 0;
+        final medicines = snapshot['medicines'] as List?;
+        return medicines?.length ?? 0;
+      });
+}
+
   // ==================== MAIN BUILD ====================
   @override
   Widget build(BuildContext context) {
@@ -315,7 +340,36 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
         (medicine['discount_price_each'] ?? 0.0) * _quantity;
 
     return Scaffold(
-      appBar: AppBar(title: Text(medicine['name'] ?? 'Medicine Details')),
+      appBar: AppBar(
+  title: Text(widget.medicine['name'] ?? 'Medicine Details'),
+  centerTitle: true,
+  actions: [
+    StreamBuilder<int>(
+      stream: _getCartItemCount(),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        return Padding(
+          padding: const EdgeInsets.only(right: 20.0),
+          child: custom_badge.Badge(
+            position: custom_badge.BadgePosition.topEnd(top: -10, end: -10),
+            badgeContent: Text('$count'),
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    ),
+  ],
+),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -384,7 +438,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
 
             // 7. Add to Cart Button
             SizedBox(
-              width:150,
+              width: 150,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 10),
@@ -414,7 +468,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
                 medicine['description'],
                 style: const TextStyle(fontSize: 16),
                 maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 10),
             ],

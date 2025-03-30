@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart' as custom_badge;
 import 'package:new_project/order/add_to_cart.dart';
+import 'package:new_project/order/cartPage.dart';
 
 class OrderMedicine extends StatefulWidget {
   const OrderMedicine({super.key});
@@ -18,6 +20,7 @@ class _OrderMedicineState extends State<OrderMedicine> {
   String _searchQuery = '';
   final CollectionReference medicinesCollection = FirebaseFirestore.instance
       .collection('medicines');
+  int _cartItemCount = 0; // Initialize cart item count
 
   @override
   void dispose() {
@@ -230,6 +233,21 @@ class _OrderMedicineState extends State<OrderMedicine> {
     );
   }
 
+Stream<int> _getCartItemCount() {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return Stream.value(0);
+  
+  return FirebaseFirestore.instance
+      .collection('carts')
+      .doc(user.uid)
+      .snapshots()
+      .map((snapshot) {
+        if (!snapshot.exists) return 0;
+        final medicines = snapshot['medicines'] as List?;
+        return medicines?.length ?? 0;
+      });
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -237,6 +255,32 @@ class _OrderMedicineState extends State<OrderMedicine> {
         title: const Text('Order Medicine'),
         centerTitle: true,
         elevation: 0,
+          actions: [
+    StreamBuilder<int>(
+      stream: _getCartItemCount(),
+      builder: (context, snapshot) {
+        final count = snapshot.data ?? 0;
+        return Padding(
+          padding: const EdgeInsets.only(right: 20.0,top: 5),
+          child: custom_badge.Badge(
+            alignment: Alignment.topRight,
+            label: Text('$count'),
+            child: IconButton(
+              icon: const Icon(Icons.shopping_cart),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+            ),
+          ),
+        );
+      },
+    ),
+  ],
       ),
       body: Column(
         children: [
