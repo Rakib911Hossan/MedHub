@@ -88,15 +88,14 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
         final newCartItem = {
           'medicineId': widget.medicineId,
           'name': medicineName,
-          'price': price, // Use current price
-          'discount_price_each': discountPrice, // Use current discount price
+          'price': price,
+          'discount_price_each': discountPrice,
           'company': company,
           'generic_group': widget.medicine['generic_group']?.toString() ?? '',
           'image': widget.medicine['image']?.toString() ?? '',
-          'quantity': _quantity, // Use current quantity only
-          'total_price': price * _quantity, // Calculate total price
-          'total_discount_price':
-              discountPrice * _quantity, // Calculate total discount price
+          'quantity': _quantity,
+          'total_price': price * _quantity,
+          'total_discount_price': discountPrice * _quantity,
         };
 
         if (cartDoc.exists) {
@@ -117,8 +116,22 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           // Add the new version (replacing all previous)
           updatedMedicines.add(newCartItem);
 
+          // Calculate totals
+          final totalDiscount = updatedMedicines.fold<double>(
+            0.0,
+            (sum, item) => sum + (item['total_discount_price'] as num).toDouble(),
+          );
+          final totalPrice = updatedMedicines.fold<double>(
+            0.0,
+            (sum, item) => sum + (item['total_price'] as num).toDouble(),
+          );
+          final totalAfterDiscount = totalPrice - totalDiscount;
+
           transaction.update(cartRef, {
             'medicines': updatedMedicines,
+            'whole_cart_discount_price': totalAfterDiscount,
+            'whole_cart_total_price': totalPrice,
+            'whole_cart_price_after_discount': totalDiscount,
             'updatedAt': FieldValue.serverTimestamp(),
           });
         } else {
@@ -126,6 +139,9 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           transaction.set(cartRef, {
             'uid': user.uid,
             'medicines': [newCartItem],
+            'whole_cart_discount_price': discountPrice * _quantity,
+            'whole_cart_total_price': price * _quantity,
+            'whole_cart_price_after_discount': (price - discountPrice) * _quantity,
             'cartConfirmed': false,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
