@@ -14,6 +14,7 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   final user = FirebaseAuth.instance.currentUser;
+  bool _isLoading = false; 
 
   Future<Map<String, dynamic>?> _getUserData() async {
     if (user == null) return null;
@@ -286,7 +287,7 @@ class _CartPageState extends State<CartPage> {
         SizedBox(
           width: 188,
           child: ElevatedButton(
-            onPressed: _confirmCart,
+            onPressed: _confirmOrder,
             child: const Text('Comfirm Order'),
           ),
         ),
@@ -349,20 +350,69 @@ class _CartPageState extends State<CartPage> {
   }
 }
 
-  Future<void> _confirmCart() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('carts')
-          .doc(user?.uid)
-          .update({
-            'cartConfirmed': true,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-      // Navigate to checkout or show success message
-    } catch (e) {
+ Future<void> _confirmOrder() async {
+  if (user == null) return;
+
+  setState(() => _isLoading = true);
+
+  try {
+    // 1. Generate random order ID
+    final orderId = 'ORD${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    final deliveryDate = DateTime.now().add(const Duration(days: 3)); // 3 days from now
+    
+    // 2. Get current cart data
+    final cartDoc = await FirebaseFirestore.instance
+        .collection('carts')
+        .doc(user!.uid)
+        .get();
+    
+    if (!cartDoc.exists) throw Exception('Cart not found');
+
+    // 3. Create new order document
+    await FirebaseFirestore.instance
+        .collection('orders')
+        .doc(orderId)
+        .set({
+          'orderId': orderId,
+          'userId': user!.uid,
+          'cartId': cartDoc['cartId'], // Using user ID as cart ID if 1:1
+          'items': cartDoc.data()!['medicines'],
+          'deliveryDate': deliveryDate,
+          'deliveryMan': '', // To be assigned later
+          'deliveryPhone': '', // To be assigned later
+          'status': 'pending',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'totalAmount': cartDoc.data()!['whole_cart_price_after_discount'] ?? 0,
+        });
+
+    // 4. Update cart status
+    await FirebaseFirestore.instance
+        .collection('carts')
+        .doc(user!.uid)
+        .update({
+          'cartConfirmed': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+    // 5. Show success and navigate
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to confirm cart: ${e.toString()}')),
+        SnackBar(content: Text('Order #$orderId confirmed!')),
+      );
+      Navigator.pushNamed(context, '/order-confirmation', arguments: orderId);
+    }
+
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to confirm order: ${e.toString()}')),
       );
     }
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
   }
+}
 }
