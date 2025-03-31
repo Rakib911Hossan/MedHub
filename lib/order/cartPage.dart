@@ -16,14 +16,15 @@ class CartPage extends StatefulWidget {
 
 class _CartPageState extends State<CartPage> {
   final user = FirebaseAuth.instance.currentUser;
-  bool _isLoading = false; 
+  bool _isLoading = false;
 
   Future<Map<String, dynamic>?> _getUserData() async {
     if (user == null) return null;
-    final doc = await FirebaseFirestore.instance
-        .collection('user_info')
-        .doc(user!.uid)
-        .get();
+    final doc =
+        await FirebaseFirestore.instance
+            .collection('user_info')
+            .doc(user!.uid)
+            .get();
     return doc.data();
   }
 
@@ -35,9 +36,9 @@ class _CartPageState extends State<CartPage> {
         centerTitle: true,
         actions: [
           Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: GestureDetector(
-           onTap: () async {
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GestureDetector(
+              onTap: () async {
                 final userData = await _getUserData();
                 if (userData == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -45,43 +46,42 @@ class _CartPageState extends State<CartPage> {
                   );
                   return;
                 }
-                
+
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => DeliveryAddressPage(
-                      user: user!,
-                      initialAddress: userData['address'] ?? '',
-                      initialPhone: userData['phone']?.toString() ?? '',
-                    ),
+                    builder:
+                        (context) => DeliveryAddressPage(
+                          user: user!,
+                          initialAddress: userData['address'] ?? '',
+                          initialPhone: userData['phone']?.toString() ?? '',
+                        ),
                   ),
                 );
-                
+
                 if (result != null && mounted) {
                   setState(() {
                     // Update local state if needed
                   });
                 }
               },
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-          Icon(Icons.home),
-          Text(
-            'Address',
-            style: TextStyle(fontSize: 10),
-          ),
-            ],
-          ),
-        ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.home),
+                  Text('Address', style: TextStyle(fontSize: 10)),
+                ],
+              ),
+            ),
           ),
         ],
       ),
       body: StreamBuilder<DocumentSnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('carts')
-            .doc(user?.uid)
-            .snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('carts')
+                .doc(user?.uid)
+                .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -92,7 +92,9 @@ class _CartPageState extends State<CartPage> {
           }
 
           final cartData = snapshot.data!.data() as Map<String, dynamic>;
-          final medicines = List<Map<String, dynamic>>.from(cartData['medicines'] ?? []);
+          final medicines = List<Map<String, dynamic>>.from(
+            cartData['medicines'] ?? [],
+          );
 
           if (medicines.isEmpty) {
             return const Center(child: Text('Your cart is empty'));
@@ -132,15 +134,13 @@ class _CartPageState extends State<CartPage> {
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.grey[200],
               ),
-              child: medicine['image']?.isNotEmpty == true
-                  ? Image.file(
-                    File(medicine['image']),
-                      fit: BoxFit.cover,
-                    )
-                  : const Icon(Icons.medication, size: 40),
+              child:
+                  medicine['image']?.isNotEmpty == true
+                      ? Image.file(File(medicine['image']), fit: BoxFit.cover)
+                      : const Icon(Icons.medication, size: 40),
             ),
             const SizedBox(width: 12),
-            
+
             // Medicine Details
             Expanded(
               child: Column(
@@ -164,31 +164,33 @@ class _CartPageState extends State<CartPage> {
                 ],
               ),
             ),
-            
+
             // Price and Actions
             Column(
               children: [
-                 if ((medicine['total_discount_price'] ?? 0) > 0)
+                if ((medicine['total_discount_price'] ?? 0) > 0)
                   Text(
                     'BDT ${medicine['total_discount_price']?.toStringAsFixed(2)}',
                     style: TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                      fontSize: 16,
                     ),
                   ),
                 Text(
                   'BDT ${medicine['total_price']?.toStringAsFixed(2)}',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    decoration: (medicine['total_discount_price'] ?? 0) > 0
-                    ? TextDecoration.lineThrough
-                    : TextDecoration.none,
-                    color: (medicine['total_discount_price'] ?? 0) > 0
-                    ? Colors.grey
-                    : Colors.black,
-                    ),
+                    decoration:
+                        (medicine['total_discount_price'] ?? 0) > 0
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                    color:
+                        (medicine['total_discount_price'] ?? 0) > 0
+                            ? Colors.grey
+                            : Colors.black,
                   ),
+                ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _removeFromCart(medicine['medicineId']),
@@ -201,218 +203,262 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
- Widget _buildTotalSection(Map<String, dynamic> cartData) {
-  final total = (cartData['whole_cart_total_price'] ?? 0).toDouble();
-  final totalDiscount = (cartData['whole_cart_discount_price'] ?? 0).toDouble();
-  final totalPriceAfterDisc = (cartData['whole_cart_price_after_discount'] ?? total).toDouble();
-  final deliveryCharge = 70.0;
-  final showDeliveryCharge = totalPriceAfterDisc < 1000; // Assuming free delivery for orders over 1000
-  final grandTotal = showDeliveryCharge ? totalPriceAfterDisc + deliveryCharge : totalPriceAfterDisc;
-  final deliveryDate = DateTime.now().add(const Duration(days: 1)).toLocal().toString().split(' ')[0];
+  Widget _buildTotalSection(Map<String, dynamic> cartData) {
+    final total = (cartData['whole_cart_total_price'] ?? 0).toDouble();
+    final totalDiscount =
+        (cartData['whole_cart_discount_price'] ?? 0).toDouble();
+    final totalPriceAfterDisc =
+        (cartData['whole_cart_price_after_discount'] ?? total).toDouble();
+    final deliveryCharge = 70.0;
+    final showDeliveryCharge =
+        totalPriceAfterDisc <
+        1000; // Assuming free delivery for orders over 1000
+    final grandTotal =
+        showDeliveryCharge
+            ? totalPriceAfterDisc + deliveryCharge
+            : totalPriceAfterDisc;
+    final deliveryDate =
+        DateTime.now()
+            .add(const Duration(days: 1))
+            .toLocal()
+            .toString()
+            .split(' ')[0];
 
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: Colors.grey[50],
-      border: Border(top: BorderSide(color: Colors.grey[300]!)),
-    ),
-    child: Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Subtotal:', style: TextStyle(fontSize: 16)),
-            Text('BDT ${total.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16)),
-          ],
-        ),
-        if (totalDiscount > 0) ...[
-          const SizedBox(height: 4),
-          const SizedBox(height: 4),
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+      ),
+      child: Column(
+        children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Price after discount:', style: TextStyle(fontSize: 16)),
-              Text('BDT ${totalPriceAfterDisc.toStringAsFixed(2)}', 
-                  style: const TextStyle(color: Colors.green, fontSize: 16)),
+              const Text('Subtotal:', style: TextStyle(fontSize: 16)),
+              Text(
+                'BDT ${total.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 16),
+              ),
             ],
           ),
-        ],
-        if (showDeliveryCharge) ...[
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Delivery Charge:', style: TextStyle(fontSize: 16)),
-              Text('BDT ${deliveryCharge.toStringAsFixed(2)}', 
-                  style: const TextStyle(fontSize: 16)),
-            ],
-          ),
-        ] else ...[
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Delivery:', style: TextStyle(fontSize: 16)),
-              Text('FREE', 
-                  style: const TextStyle(color: Colors.green, fontSize: 16)),
-            ],
-          ),
-        ],
-          Text(
-          'Delivery charge wont be applied for orders over BDT 1000',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-          ),
-        ),
-        const Divider(height: 20),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Total:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text(
-              'BDT ${grandTotal.toStringAsFixed(2)}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          if (totalDiscount > 0) ...[
+            const SizedBox(height: 4),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Price after discount:',
+                  style: TextStyle(fontSize: 16),
+                ),
+                Text(
+                  'BDT ${totalPriceAfterDisc.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.green, fontSize: 16),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Estimated Delivery Date: $deliveryDate',
-          style: const TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
+          if (showDeliveryCharge) ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Delivery Charge:', style: TextStyle(fontSize: 16)),
+                Text(
+                  'BDT ${deliveryCharge.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ],
+            ),
+          ] else ...[
+            const SizedBox(height: 4),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Delivery:', style: TextStyle(fontSize: 16)),
+                Text(
+                  'FREE',
+                  style: const TextStyle(color: Colors.green, fontSize: 16),
+                ),
+              ],
+            ),
+          ],
+          Text(
+            'Delivery charge wont be applied for orders over BDT 1000',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
-        ),
-        
-        const SizedBox(height: 16),
-        SizedBox(
-          width: 188,
-          child: ElevatedButton(
-            onPressed: _confirmOrder,
-            child: const Text('Comfirm Order'),
+          const Divider(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total:',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                'BDT ${grandTotal.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 8),
+          Text(
+            'Estimated Delivery Date: $deliveryDate',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
 
- Future<void> _removeFromCart(String medicineId) async {
-  try {
-    final user = FirebaseAuth.instance.currentUser;
+          const SizedBox(height: 16),
+          SizedBox(
+            width: 188,
+            child: ElevatedButton(
+              onPressed: _confirmOrder,
+              child: const Text('Comfirm Order'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _removeFromCart(String medicineId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final cartDoc =
+          await FirebaseFirestore.instance
+              .collection('carts')
+              .doc(user.uid)
+              .get();
+
+      if (!cartDoc.exists) return;
+
+      final medicines = List<Map<String, dynamic>>.from(
+        cartDoc.data()?['medicines'] ?? [],
+      );
+
+      final medicineToRemove = medicines.firstWhere(
+        (item) => item['medicineId'] == medicineId,
+        orElse: () => {},
+      );
+
+      // Calculate the price values safely
+      final itemTotalPrice = double.parse(
+        ((medicineToRemove['total_price'] as num?) ?? 0).toStringAsFixed(2),
+      );
+      final itemTotalDiscountAmount = double.parse(
+        ((medicineToRemove['total_discount_amount'] as num?) ?? 0)
+            .toStringAsFixed(2),
+      );
+      final itemPriceAfterDisc = double.parse(
+        (itemTotalPrice - itemTotalDiscountAmount).toStringAsFixed(2),
+      );
+
+      // Print the items for debugging
+      debugPrint('Item Total Price: $itemTotalPrice');
+      debugPrint('Item Total Discount Amount: $itemTotalDiscountAmount');
+      debugPrint('Item Price After Discount: $itemPriceAfterDisc');
+
+      // Remove the medicine manually instead of using arrayRemove()
+      final updatedMedicines =
+          medicines.where((item) => item['medicineId'] != medicineId).toList();
+
+      // Prepare the update data
+      final updatedCartData = {
+        'medicines': updatedMedicines,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'whole_cart_total_price': FieldValue.increment(-itemTotalPrice),
+        'whole_cart_discount_price': FieldValue.increment(
+          -itemTotalDiscountAmount,
+        ),
+        'whole_cart_price_after_discount': FieldValue.increment(
+          -itemPriceAfterDisc,
+        ),
+      };
+
+      await FirebaseFirestore.instance
+          .collection('carts')
+          .doc(user.uid)
+          .update(updatedCartData);
+
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Item removed from cart')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove item: ${e.toString()}')),
+        );
+      }
+      debugPrint('Error removing from cart: $e');
+    }
+  }
+
+  Future<void> _confirmOrder() async {
     if (user == null) return;
 
-    final cartDoc = await FirebaseFirestore.instance
-        .collection('carts')
-        .doc(user.uid)
-        .get();
-
-    if (!cartDoc.exists) return;
-
-    final medicines = List<Map<String, dynamic>>.from(cartDoc.data()!['medicines'] ?? []);
-    final medicineToRemove = medicines.firstWhere(
-      (item) => item['medicineId'] == medicineId,
-      orElse: () => {},
-    );
-
-    if (medicineToRemove.isEmpty) return;
-
-    // Calculate the differences to subtract from current totals
-    final itemTotalPrice = (medicineToRemove['total_price'] ?? 0).toDouble();
-    final itemTotalDiscount = (medicineToRemove['total_discount_price'] ?? 0).toDouble();
-    final itemPriceAfterDisc = itemTotalPrice - itemTotalDiscount;
-
-    // Prepare the update data
-    final updatedCartData = {
-      'medicines': FieldValue.arrayRemove([medicineToRemove]),
-      'updatedAt': FieldValue.serverTimestamp(),
-      'whole_cart_total_price': FieldValue.increment(-itemTotalPrice),
-      'whole_cart_discount_price': FieldValue.increment(-itemTotalDiscount),
-      'whole_cart_price_after_discount': FieldValue.increment(-itemPriceAfterDisc),
-    };
-
-    await FirebaseFirestore.instance
-      .collection('carts')
-      .doc(user.uid)
-      .update(updatedCartData);
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Item removed from cart')),
-      );
-    }
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to remove item: ${e.toString()}')),
-      );
-    }
-    debugPrint('Error removing from cart: $e');
-  }
-}
-
- Future<void> _confirmOrder() async {
-  if (user == null) return;
-
-  setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
 
     // 1. Generate random order ID
-    final orderId = 'ORD${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
-    final deliveryDate = DateTime.now().add(const Duration(days: 3)); // 3 days from now
-    
+    final orderId =
+        'ORD${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+    final deliveryDate = DateTime.now().add(
+      const Duration(days: 3),
+    ); // 3 days from now
+
     // 2. Get current cart data
-    final cartDoc = await FirebaseFirestore.instance
-        .collection('carts')
-        .doc(user!.uid)
-        .get();
-    
+    final cartDoc =
+        await FirebaseFirestore.instance
+            .collection('carts')
+            .doc(user!.uid)
+            .get();
+
     if (!cartDoc.exists) throw Exception('Cart not found');
 
     // 3. Create new order document
-    await FirebaseFirestore.instance
-        .collection('orders')
-        .doc(orderId)
-        .set({
-          'orderId': orderId,
-          'userId': user!.uid,
-          'cartId': cartDoc['cartId'], // Using user ID as cart ID if 1:1
-          'items': cartDoc.data()!['medicines'],
-          'deliveryDate': deliveryDate,
-          'deliveryMan': '', // To be assigned later
-          'deliveryPhone': '', // To be assigned later
-          'status': 'pending',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-          'totalAmount': cartDoc.data()!['whole_cart_price_after_discount'] ?? 0,
-        });
+    await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
+      'orderId': orderId,
+      'userId': user!.uid,
+      'cartId': cartDoc['cartId'], // Using user ID as cart ID if 1:1
+      'items': cartDoc.data()!['medicines'],
+      'deliveryDate': deliveryDate,
+      'deliveryMan': '', // To be assigned later
+      'deliveryPhone': '', // To be assigned later
+      'status': 'pending',
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+      'totalAmount': cartDoc.data()!['whole_cart_price_after_discount'] ?? 0,
+    });
 
     // 4. Update cart status
-    await FirebaseFirestore.instance
-        .collection('carts')
-        .doc(user!.uid)
-        .update({
-          'cartConfirmed': true,
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
+    await FirebaseFirestore.instance.collection('carts').doc(user!.uid).update({
+      'cartConfirmed': true,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
 
     // 5. Show success and navigate
     if (mounted) {
-  // Show celebration dialog first
-  showDialog(
-    context: context,
-    barrierDismissible: false, // Prevent dismissing by tapping outside
-    builder: (context) => const CelebrationDialog(),
-  ).then((_) {
-    // After dialog is closed, show snackbar and navigate
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Order #$orderId confirmed!')),
-    );
-    Navigator.push(context, MaterialPageRoute(
-      builder: (context) => const OrderMedicine(),
-    ));
-  });
-}
-
-}
+      // Show celebration dialog first
+      showDialog(
+        context: context,
+        barrierDismissible: false, // Prevent dismissing by tapping outside
+        builder: (context) => const CelebrationDialog(),
+      ).then((_) {
+        // After dialog is closed, show snackbar and navigate
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Order #$orderId confirmed!')));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const OrderMedicine()),
+        );
+      });
+    }
+  }
 }

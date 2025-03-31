@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/medicine/medicines.dart';
+import 'package:new_project/order/orders.dart';
 import 'package:new_project/users/profile_screen.dart';
 import 'package:new_project/users/user_list';
 import 'login_screen.dart';
@@ -75,22 +76,51 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.zero,
                 children: [
                   UserAccountsDrawerHeader(
-                    accountName: Text(userName),
-                    accountEmail: Text(user?.email ?? ''),
+                    decoration: const BoxDecoration(
+                      color: Color.fromARGB(
+                        255,
+                        26,
+                        67,
+                        114,
+                      ), // Header background color
+                    ),
+                    accountName: Text(
+                      userName,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    accountEmail: Text(
+                      user?.email ?? '',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
                     currentAccountPicture: const CircleAvatar(
-                      child: Icon(Icons.person),
+                      backgroundColor: Colors.white,
+                      child: Icon(Icons.person, color: Colors.blueAccent),
                     ),
                   ),
                   ListTile(
-                    leading: const Icon(Icons.home),
-                    title: const Text('Home'),
+                    leading: const Icon(Icons.home, color: Colors.blueGrey),
+                    title: const Text(
+                      'Home',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    tileColor: Colors.grey[100],
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.person),
-                    title: const Text('Profile'),
+                    leading: const Icon(Icons.person, color: Colors.teal),
+                    title: const Text(
+                      'Profile',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    tileColor: Colors.grey[100],
                     onTap: () {
                       Navigator.push(
                         context,
@@ -100,10 +130,45 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.receipt_long,
+                      color: Colors.indigo,
+                    ),
+                    title: const Text(
+                      'Orders',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    tileColor: Colors.grey[100],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Orders(),
+                        ),
+                      );
+                    },
+                  ),
                   if (userRole == 'admin')
                     ListTile(
-                      leading: const Icon(Icons.medication),
-                      title: const Text('Medicines'),
+                      leading: const Icon(
+                        Icons.medication,
+                        color: Color.fromARGB(255, 219, 46, 46),
+                      ),
+                      title: const Text(
+                        'Medicines',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      tileColor: Colors.grey[100],
                       onTap: () {
                         Navigator.push(
                           context,
@@ -115,8 +180,18 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   if (userRole == 'admin')
                     ListTile(
-                      leading: const Icon(Icons.account_circle),
-                      title: const Text('Users'),
+                      leading: const Icon(
+                        Icons.account_circle,
+                        color: Colors.deepPurple,
+                      ),
+                      title: const Text(
+                        'Users',
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      tileColor: Colors.grey[100],
                       onTap: () {
                         Navigator.push(
                           context,
@@ -127,8 +202,18 @@ class _HomeScreenState extends State<HomeScreen> {
                       },
                     ),
                   ListTile(
-                    leading: const Icon(Icons.logout_outlined),
-                    title: const Text('Logout'),
+                    leading: const Icon(
+                      Icons.logout_outlined,
+                      color: Color.fromARGB(255, 136, 12, 3),
+                    ),
+                    title: const Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    tileColor: Colors.grey[100],
                     onTap: () async {
                       await FirebaseAuth.instance.signOut();
                       Navigator.pushReplacement(
