@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/order/celebration_dialog.dart';
 import 'package:new_project/order/deliveryAddress.dart';
+import 'package:new_project/order/order_medicine.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -396,11 +398,21 @@ class _CartPageState extends State<CartPage> {
 
     // 5. Show success and navigate
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Order #$orderId confirmed!')),
-      );
-      Navigator.pushNamed(context, '/order-confirmation', arguments: orderId);
-    }
+  // Show celebration dialog first
+  showDialog(
+    context: context,
+    barrierDismissible: false, // Prevent dismissing by tapping outside
+    builder: (context) => const CelebrationDialog(),
+  ).then((_) {
+    // After dialog is closed, show snackbar and navigate
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Order #$orderId confirmed!')),
+    );
+    Navigator.push(context, MaterialPageRoute(
+      builder: (context) => const OrderMedicine(),
+    ));
+  });
+}
 
 }
 }

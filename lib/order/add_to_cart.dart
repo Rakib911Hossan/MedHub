@@ -100,7 +100,9 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           'total_discount_price': discountPrice * _quantity,
         };
 
-        if (cartDoc.exists) {
+        if (cartDoc.exists &&
+            cartDoc['uid'] == user.uid &&
+            cartDoc['cartConfirmed'] == false) {
           final medicines = List<Map<String, dynamic>>.from(
             cartDoc['medicines'] ?? [],
           );
