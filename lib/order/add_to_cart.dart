@@ -22,7 +22,6 @@ class MedicineDetailsPage extends StatefulWidget {
 
 class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
   int _quantity = 1;
-  int _cartItemCount = 0; // Initialize cart item count
   DocumentSnapshot? medicineSnapshot;
   int _currentStep = 1; // Moved to state
   late final TextEditingController _stepController = TextEditingController(
@@ -56,8 +55,6 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
 
   Future<void> _addToCart() async {
     try {
-      debugPrint('Adding medicine: ${widget.medicine['name']}');
-
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         _showSnackBar('Please sign in to add items to cart');
@@ -79,6 +76,8 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
       }
       final discountPrice =
           (widget.medicine['discount_price_each'] as num?)?.toDouble() ?? 0.0;
+      final discountAmount =
+          (widget.medicine['discount_amount'] as num?)?.toDouble() ?? 0.0;
 
       final cartRef = FirebaseFirestore.instance
           .collection('carts')
@@ -97,6 +96,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           'image': widget.medicine['image']?.toString() ?? '',
           'quantity': _quantity,
           'total_price': price * _quantity,
+          'total_discount_amount': discountAmount * _quantity,
           'total_discount_price': discountPrice * _quantity,
         };
 
@@ -121,22 +121,33 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           updatedMedicines.add(newCartItem);
 
           // Calculate totals
-          final totalDiscount = updatedMedicines.fold<double>(
+          final totalDiscountAmount = updatedMedicines.fold<double>(
             0.0,
             (sum, item) =>
-                sum + (item['total_discount_price'] as num).toDouble(),
+                sum +
+                ((item['total_price'] as num? ?? 0.0) -
+                        (item['total_discount_price'] as num? ?? 0.0))
+                    .toDouble(),
           );
+
           final totalPrice = updatedMedicines.fold<double>(
             0.0,
             (sum, item) => sum + (item['total_price'] as num).toDouble(),
           );
-          final totalAfterDiscount = totalPrice - totalDiscount;
+          final totalAfterDiscount = totalPrice - totalDiscountAmount;
 
           transaction.update(cartRef, {
             'medicines': updatedMedicines,
-            'whole_cart_discount_price': totalAfterDiscount,
-            'whole_cart_total_price': totalPrice,
-            'whole_cart_price_after_discount': totalDiscount,
+            'whole_cart_discount_price': double.parse(
+              totalDiscountAmount.toStringAsFixed(2),
+            ),
+            'whole_cart_total_price': double.parse(
+              totalPrice.toStringAsFixed(2),
+            ),
+            'whole_cart_price_after_discount': double.parse(
+              totalAfterDiscount.toStringAsFixed(2),
+            ),
+
             'updatedAt': FieldValue.serverTimestamp(),
           });
         } else {
@@ -145,10 +156,16 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
             'uid': user.uid,
             'cartId': cartId,
             'medicines': [newCartItem],
-            'whole_cart_discount_price': discountPrice * _quantity,
-            'whole_cart_total_price': price * _quantity,
-            'whole_cart_price_after_discount':
-                (price - discountPrice) * _quantity,
+            'whole_cart_discount_price': double.parse(
+              (discountAmount * _quantity).toStringAsFixed(2),
+            ),
+            'whole_cart_total_price': double.parse(
+              (price * _quantity).toStringAsFixed(2),
+            ),
+            'whole_cart_price_after_discount': double.parse(
+              ((price - discountAmount) * _quantity).toStringAsFixed(2),
+            ),
+
             'cartConfirmed': false,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
