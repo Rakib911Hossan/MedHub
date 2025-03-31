@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:new_project/order/cartPage.dart';
+import 'package:new_project/order/empty_cart_page.dart';
 
 class MedicineDetailsPage extends StatefulWidget {
   final String medicineId;
@@ -62,7 +63,8 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
         _showSnackBar('Please sign in to add items to cart');
         return;
       }
-      final cartId = 'CRT${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
+      final cartId =
+          'CRT${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
       final medicineName =
           widget.medicine['name']?.toString() ?? 'Unknown Medicine';
       final company = widget.medicine['company']?.toString() ?? '';
@@ -119,7 +121,8 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
           // Calculate totals
           final totalDiscount = updatedMedicines.fold<double>(
             0.0,
-            (sum, item) => sum + (item['total_discount_price'] as num).toDouble(),
+            (sum, item) =>
+                sum + (item['total_discount_price'] as num).toDouble(),
           );
           final totalPrice = updatedMedicines.fold<double>(
             0.0,
@@ -142,7 +145,8 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
             'medicines': [newCartItem],
             'whole_cart_discount_price': discountPrice * _quantity,
             'whole_cart_total_price': price * _quantity,
-            'whole_cart_price_after_discount': (price - discountPrice) * _quantity,
+            'whole_cart_price_after_discount':
+                (price - discountPrice) * _quantity,
             'cartConfirmed': false,
             'createdAt': FieldValue.serverTimestamp(),
             'updatedAt': FieldValue.serverTimestamp(),
@@ -333,20 +337,21 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
     );
   }
 
-Stream<int> _getCartItemCount() {
-  final user = FirebaseAuth.instance.currentUser;
-  if (user == null) return Stream.value(0);
-  
-  return FirebaseFirestore.instance
-      .collection('carts')
-      .doc(user.uid)
-      .snapshots()
-      .map((snapshot) {
-        if (!snapshot.exists) return 0;
-        final medicines = snapshot['medicines'] as List?;
-        return medicines?.length ?? 0;
-      });
-}
+  Stream<int> _getCartItemCount() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return Stream.value(0);
+
+    return FirebaseFirestore.instance
+        .collection('carts')
+        .doc(user.uid)
+        .snapshots()
+        .map((snapshot) {
+          if (!snapshot.exists) return 0;
+          final medicines = snapshot['medicines'] as List?;
+          final cartConfirmed = snapshot['cartConfirmed'] as bool? ?? true;
+          return (cartConfirmed == false) ? (medicines?.length ?? 0) : 0;
+        });
+  }
 
   // ==================== MAIN BUILD ====================
   @override
@@ -358,35 +363,47 @@ Stream<int> _getCartItemCount() {
 
     return Scaffold(
       appBar: AppBar(
-  title: Text(widget.medicine['name'] ?? 'Medicine Details'),
-  centerTitle: true,
-  actions: [
-    StreamBuilder<int>(
-      stream: _getCartItemCount(),
-      builder: (context, snapshot) {
-        final count = snapshot.data ?? 0;
-        return Padding(
-          padding: const EdgeInsets.only(right: 20.0),
-          child: custom_badge.Badge(
-            position: custom_badge.BadgePosition.topEnd(top: -10, end: -10),
-            badgeContent: Text('$count'),
-            child: IconButton(
-              icon: const Icon(Icons.shopping_cart),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
-            ),
+        title: Text(widget.medicine['name'] ?? 'Medicine Details'),
+        centerTitle: true,
+        actions: [
+          StreamBuilder<int>(
+            stream: _getCartItemCount(),
+            builder: (context, snapshot) {
+              final count = snapshot.data ?? 0;
+              return Padding(
+                padding: const EdgeInsets.only(right: 20.0),
+                child: custom_badge.Badge(
+                  position: custom_badge.BadgePosition.topEnd(
+                    top: -10,
+                    end: -10,
+                  ),
+                  badgeContent: Text('$count'),
+                  child: IconButton(
+                    icon: const Icon(Icons.shopping_cart),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () async {
+                      // Get the current cart count
+                      final currentCount = await _getCartItemCount().first;
+                      // Navigate to CartPage with empty state if count is 0
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  currentCount == 0
+                                      ? const EmptyCartPage() // Create this widget for empty state
+                                      : const CartPage(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              );
+            },
           ),
-        );
-      },
-    ),
-  ],
-),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(

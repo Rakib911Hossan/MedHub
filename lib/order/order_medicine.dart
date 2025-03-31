@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart' as custom_badge;
 import 'package:new_project/order/add_to_cart.dart';
 import 'package:new_project/order/cartPage.dart';
+import 'package:new_project/order/empty_cart_page.dart';
 
 class OrderMedicine extends StatefulWidget {
   const OrderMedicine({super.key});
@@ -236,7 +237,7 @@ class _OrderMedicineState extends State<OrderMedicine> {
 Stream<int> _getCartItemCount() {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return Stream.value(0);
-  
+
   return FirebaseFirestore.instance
       .collection('carts')
       .doc(user.uid)
@@ -244,7 +245,8 @@ Stream<int> _getCartItemCount() {
       .map((snapshot) {
         if (!snapshot.exists) return 0;
         final medicines = snapshot['medicines'] as List?;
-        return medicines?.length ?? 0;
+        final cartConfirmed = snapshot['cartConfirmed'] as bool? ?? true;
+        return (cartConfirmed == false) ? (medicines?.length ?? 0) : 0;
       });
 }
 
@@ -252,16 +254,16 @@ Stream<int> _getCartItemCount() {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Order Medicine'),
-        centerTitle: true,
-        elevation: 0,
-          actions: [
+  title: const Text('Order Medicine'),
+  centerTitle: true,
+  elevation: 0,
+  actions: [
     StreamBuilder<int>(
       stream: _getCartItemCount(),
       builder: (context, snapshot) {
         final count = snapshot.data ?? 0;
         return Padding(
-          padding: const EdgeInsets.only(right: 20.0,top: 5),
+          padding: const EdgeInsets.only(right: 20.0, top: 5),
           child: custom_badge.Badge(
             alignment: Alignment.topRight,
             label: Text('$count'),
@@ -269,10 +271,17 @@ Stream<int> _getCartItemCount() {
               icon: const Icon(Icons.shopping_cart),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
-              onPressed: () {
+              onPressed: () async {
+                // Get the current cart count
+                final currentCount = await _getCartItemCount().first;
+                // Navigate to CartPage with empty state if count is 0
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
+                  MaterialPageRoute(
+                    builder: (context) => currentCount == 0 
+                      ? const EmptyCartPage()  // Create this widget for empty state
+                      : const CartPage(),
+                  ),
                 );
               },
             ),
@@ -281,7 +290,7 @@ Stream<int> _getCartItemCount() {
       },
     ),
   ],
-      ),
+),
       body: Column(
         children: [
           _buildSearchBar(),

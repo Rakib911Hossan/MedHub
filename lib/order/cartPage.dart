@@ -355,7 +355,6 @@ class _CartPageState extends State<CartPage> {
 
   setState(() => _isLoading = true);
 
-  try {
     // 1. Generate random order ID
     final orderId = 'ORD${DateTime.now().millisecondsSinceEpoch.toString().substring(5)}';
     final deliveryDate = DateTime.now().add(const Duration(days: 3)); // 3 days from now
@@ -403,16 +402,5 @@ class _CartPageState extends State<CartPage> {
       Navigator.pushNamed(context, '/order-confirmation', arguments: orderId);
     }
 
-  } catch (e) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to confirm order: ${e.toString()}')),
-      );
-    }
-  } finally {
-    if (mounted) {
-      setState(() => _isLoading = false);
-    }
-  }
 }
 }
