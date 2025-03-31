@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:new_project/order/deliveryAddress.dart';
+import 'package:new_project/order/order_medicine.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({super.key});
@@ -399,7 +400,9 @@ class _CartPageState extends State<CartPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Order #$orderId confirmed!')),
       );
-      Navigator.pushNamed(context, '/order-confirmation', arguments: orderId);
+      Navigator.push(context, MaterialPageRoute(
+        builder: (context) => const OrderMedicine(),
+      ));
     }
 
 }
