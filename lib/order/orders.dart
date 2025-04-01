@@ -67,7 +67,7 @@ class _OrdersState extends State<Orders> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Status: ${order['status']}'),
-                      Text('Total: \$${order['totalAmount'].toStringAsFixed(2)}'),
+                      Text('Total: BDT ${order['totalAmount'].toStringAsFixed(2)}'),
                       Text(
                         'Delivery Date: ${DateFormat('MMM dd, yyyy').format(order['deliveryDate'].toDate())}',
                       ),
