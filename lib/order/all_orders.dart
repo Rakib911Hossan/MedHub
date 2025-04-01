@@ -13,6 +13,7 @@ class AllOrders extends StatefulWidget {
 class _AllOrdersState extends State<AllOrders> {
   final User? user = FirebaseAuth.instance.currentUser;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  bool _isLoading = false; //
 
   String userRole = 'user';
   String userName = 'User';
@@ -156,165 +157,170 @@ class _AllOrdersState extends State<AllOrders> {
         centerTitle: true,
         backgroundColor: Colors.blueGrey,
       ),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _fetchOrders(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body:
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : FutureBuilder<List<Map<String, dynamic>>>(
+                future: _fetchOrders(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('No orders found.'));
-          }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text('No orders found.'));
+                  }
 
-          final orders = snapshot.data!;
+                  final orders = snapshot.data!;
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(8),
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              final status = order['status'].toString().toLowerCase();
-              final isPending = status == 'pending';
-              final isConfirmed = status == 'confirmed';
-              final canConfirm =
-                  (userRole == 'admin' || userRole == 'deliveryMan') &&
-                  isPending;
-              final canDeliver =
-                  (userRole == 'deliveryMan' || userRole == 'admin') &&
-                  isConfirmed;
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: orders.length,
+                    itemBuilder: (context, index) {
+                      final order = orders[index];
+                      final status = order['status'].toString().toLowerCase();
+                      final isPending = status == 'pending';
+                      final isConfirmed = status == 'confirmed';
+                      final canConfirm =
+                          (userRole == 'admin' || userRole == 'deliveryMan') &&
+                          isPending;
+                      final canDeliver =
+                          (userRole == 'deliveryMan' || userRole == 'admin') &&
+                          isConfirmed;
 
-              return Card(
-                elevation: 3,
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                color: _getStatusColor(status),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
+                      return Card(
+                        elevation: 3,
+                        margin: const EdgeInsets.symmetric(vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        color: _getStatusColor(status),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(
-                                _getStatusIcon(status),
-                                color: Colors.blueGrey,
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        _getStatusIcon(status),
+                                        color: Colors.blueGrey,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Order #${order['orderId']} ',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Row(
+                                    children: [
+                                      if (isPending || userRole == 'admin')
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.delete,
+                                            color: Colors.red,
+                                          ),
+                                          onPressed:
+                                              () =>
+                                                  _showDeleteConfirmationDialog(
+                                                    context,
+                                                    order['documentId'],
+                                                  ),
+                                        ),
+                                      if (canConfirm)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.check_circle,
+                                            color: Colors.green,
+                                          ),
+                                          onPressed:
+                                              () => _showConfirmationDialog(
+                                                order,
+                                                userRole,
+                                                userName,
+                                                phoneNumber,
+                                              ),
+                                        ),
+                                      if (canDeliver)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.check_box,
+                                            color: Colors.green,
+                                          ),
+                                          onPressed: () async {
+                                            await _showDeliveredConfirmationDialog(order);
+                                            await _totalBillings();
+                                          },
+                                        ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(height: 5),
                               Text(
-                                'Order #${order['orderId']} ',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                'Status: ${order['status']}',
+                                style: TextStyle(
+                                  color: Colors.blueGrey[800],
+                                  fontWeight: FontWeight.w500,
                                   fontSize: 16,
                                 ),
                               ),
+                              const SizedBox(height: 3),
+                              Text(
+                                'Total: BDT ${order['totalAmount'].toStringAsFixed(2)}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Order Date: ${DateFormat('MMM dd, yyyy - hh:mm a').format(order['createdAt'].toDate())}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Delivery Date: ${DateFormat('MMM dd, yyyy').format(order['deliveryDate'].toDate())}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Address: ${order['userAddress']}',
+                                style: const TextStyle(fontSize: 12),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              if (order['deliveryMan'] != null &&
+                                  order['deliveryMan'].isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    'Delivery Man: ${order['deliveryMan']}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              if (order['deliveryPhone'] != null &&
+                                  order['deliveryPhone'].isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text(
+                                    'Contact: ${order['deliveryPhone']}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
                             ],
                           ),
-                          Row(
-                            children: [
-                              if (isPending || userRole == 'admin')
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.red,
-                                  ),
-                                  onPressed:
-                                      () => _showDeleteConfirmationDialog(
-                                        context,
-                                        order['documentId'],
-                                      ),
-                                ),
-                              if (canConfirm)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_circle,
-                                    color: Colors.green,
-                                  ),
-                                  onPressed:
-                                      () => _showConfirmationDialog(
-                                        order,
-                                        userRole,
-                                        userName,
-                                        phoneNumber,
-                                      ),
-                                ),
-                              if (canDeliver)
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.check_box,
-                                    color: Colors.green,
-                                  ),
-                                  onPressed:
-                                      () => _showDeliveredConfirmationDialog(
-                                        order,
-                                      ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        'Status: ${order['status']}',
-                        style: TextStyle(
-                          color: Colors.blueGrey[800],
-                          fontWeight: FontWeight.w500,
-                          fontSize: 16,
                         ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        'Total: BDT ${order['totalAmount'].toStringAsFixed(2)}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Order Date: ${DateFormat('MMM dd, yyyy - hh:mm a').format(order['createdAt'].toDate())}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Delivery Date: ${DateFormat('MMM dd, yyyy').format(order['deliveryDate'].toDate())}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Address: ${order['userAddress']}',
-                        style: const TextStyle(fontSize: 12),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      if (order['deliveryMan'] != null &&
-                          order['deliveryMan'].isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Delivery Man: ${order['deliveryMan']}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                      if (order['deliveryPhone'] != null &&
-                          order['deliveryPhone'].isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            'Contact: ${order['deliveryPhone']}',
-                            style: const TextStyle(fontSize: 12),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
-      ),
+                      );
+                    },
+                  );
+                },
+              ),
     );
   }
 
@@ -344,7 +350,6 @@ class _AllOrdersState extends State<AllOrders> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Common confirmation message
-                
                 TextFormField(
                   controller:
                       deliveryManController, // Use the pre-initialized controller
@@ -409,7 +414,9 @@ class _AllOrdersState extends State<AllOrders> {
                   );
                   return;
                 }
-
+                // setState(() {
+                //   _isLoading = true; // Show loading before operation
+                // });
                 try {
                   await FirebaseFirestore.instance
                       .collection('orders')
@@ -428,7 +435,6 @@ class _AllOrdersState extends State<AllOrders> {
                         },
                         'confirmedAt': FieldValue.serverTimestamp(),
                       });
-
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
@@ -473,6 +479,9 @@ class _AllOrdersState extends State<AllOrders> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
                 onPressed: () async {
+                  setState(() {
+                    _isLoading = true;
+                  });
                   try {
                     await FirebaseFirestore.instance
                         .collection('orders')
@@ -484,6 +493,10 @@ class _AllOrdersState extends State<AllOrders> {
                         });
 
                     Navigator.pop(context);
+                    setState(() {
+                      _isLoading = false;
+                    });
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('✅ Order marked as delivered'),
@@ -493,6 +506,9 @@ class _AllOrdersState extends State<AllOrders> {
                     setState(() {});
                   } catch (e) {
                     Navigator.pop(context);
+                    setState(() {
+                      _isLoading = false;
+                    });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('❌ Error: ${e.toString()}')),
                     );
@@ -507,4 +523,181 @@ class _AllOrdersState extends State<AllOrders> {
           ),
     );
   }
+
+  Future<void> _totalBillings() async {
+  try {
+    // 1. Get all delivered orders
+    QuerySnapshot deliveredOrders = await FirebaseFirestore.instance
+        .collection('orders')
+        .where('status', isEqualTo: 'delivered')
+        .get();
+
+    // 2. Get all medicines
+    QuerySnapshot medicinesSnapshot = await FirebaseFirestore.instance
+        .collection('medicines')
+        .get();
+
+    // 3. Process each delivered order
+    for (var orderDoc in deliveredOrders.docs) {
+      final order = orderDoc.data() as Map<String, dynamic>;
+      final items = order['items'] as List<dynamic>;
+
+      // 4. Update medicine quantities for each item in the order
+      for (var item in items.cast<Map<String, dynamic>>()) {
+        final medicineId = item['medicineId'];
+        final quantitySold = item['quantity'];
+        final totalDiscountAmount = item['total_discount_amount'] ?? 0;
+        final totalPrice = item['total_price'] ?? 0;
+        final totalDiscountPrice = item['total_discount_amount'] ?? 0;
+
+        // Find the medicine in the list
+        final medicineDoc = medicinesSnapshot.docs.cast<QueryDocumentSnapshot?>().firstWhere(
+          (doc) => doc?.id == medicineId,
+          orElse: () => null,
+        );
+
+        if (medicineDoc != null) {
+          final currentQuantity = medicineDoc['quantity'] ?? 0;
+          final currentDiscountAmount = medicineDoc['total_discount_amount'] ?? 0;
+          final currentDiscountPrice = medicineDoc['total_discount_price'] ?? 0;
+          final currentTotalPrice = medicineDoc['total_price'] ?? 0;
+
+          final newQuantity = currentQuantity - quantitySold;
+          final newDiscountAmount = currentDiscountAmount + totalDiscountAmount;
+          final newDiscountPrice = currentDiscountPrice + totalDiscountPrice;
+          final newTotalPrice = currentTotalPrice + totalPrice;
+
+          // Update medicine quantity
+          await FirebaseFirestore.instance
+              .collection('medicines')
+              .doc(medicineId)
+              .update({
+            'quantity': newQuantity,
+            'total_discount_amount': newDiscountAmount,
+            'total_discount_price': newDiscountPrice,
+            'total_price': newTotalPrice,
+            'updated_at': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+    }
+
+    // 5. Create billing records
+    await _createBillingRecords(deliveredOrders);
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Billing processed successfully')),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Error processing billing: $e')),
+    );
+  }
+}
+
+Future<void> _createBillingRecords(QuerySnapshot deliveredOrders) async {
+  final now = DateTime.now();
+  final billingId = 'BLNG${DateFormat('MMddHHmmss').format(now)}';
+  final currentMonth = DateFormat('yyyy-MM').format(now);
+  final currentYear = DateFormat('yyyy').format(now);
+
+  // Calculate daily totals
+  double dailySales = 0;
+  double dailyPurchases = 0;
+  double dailyPurchasesAfterDiscount = 0;
+  double amountAterSales = 0;
+  
+  for (var orderDoc in deliveredOrders.docs) {
+    final order = orderDoc.data() as Map<String, dynamic>;
+    dailySales += (order['totalAmount'] ?? 0).toDouble();
+  }
+
+  // Get medicines to calculate purchases
+  QuerySnapshot medicinesSnapshot = await FirebaseFirestore.instance
+      .collection('medicines')
+      .get();
+  
+  for (var medDoc in medicinesSnapshot.docs) {
+    final medicine = medDoc.data() as Map<String, dynamic>;
+    dailyPurchases += (medicine['total_price'] ?? 0).toDouble();
+    dailyPurchasesAfterDiscount += (medicine['total_discount_price'] ?? 0).toDouble();
+  }
+
+  amountAterSales = dailyPurchasesAfterDiscount - dailySales;
+  // Get or create daily document
+  final dailyDocRef = FirebaseFirestore.instance
+      .collection('billings_daily')
+      .doc(DateFormat('yyyy-MM-dd').format(now));
+
+  await dailyDocRef.set({
+    'date': now,
+    'sales': double.parse(dailySales.toStringAsFixed(2)),
+    'purchases': double.parse(dailyPurchases.toStringAsFixed(2)),
+    'purchasesAfterDiscount': double.parse(dailyPurchasesAfterDiscount.toStringAsFixed(2)),
+    'amountAterSales': double.parse(amountAterSales.toStringAsFixed(2)),
+    'billingId': billingId,
+    'updatedAt': FieldValue.serverTimestamp(),
+  }, SetOptions(merge: true));
+
+  // Calculate monthly totals from daily data
+  final monthlySales = await _calculatePeriodTotal('billings_daily', currentMonth, 'sales');
+  final monthlyPurchases = await _calculatePeriodTotal('billings_daily', currentMonth, 'purchases');
+  final monthlyPurchasesAfterDiscount = await _calculatePeriodTotal('billings_daily', currentMonth, 'purchasesAfterDiscount');
+  final monthlyAmountAterSales = await _calculatePeriodTotal('billings_daily', currentMonth, 'amountAterSales');
+
+  // Update monthly document
+  final monthlyDocRef = FirebaseFirestore.instance
+      .collection('billings_monthly')
+      .doc(currentMonth);
+
+  await monthlyDocRef.set({
+    'month': currentMonth,
+    'sales': double.parse(monthlySales.toStringAsFixed(2)),
+    'purchases': double.parse(monthlyPurchases.toStringAsFixed(2)),
+      'purchasesAfterDiscount': double.parse(monthlyPurchasesAfterDiscount.toStringAsFixed(2)),
+    'amountAterSales': double.parse(monthlyAmountAterSales.toStringAsFixed(2)),
+    'billingId': billingId,
+    'updatedAt': FieldValue.serverTimestamp(),
+  }, SetOptions(merge: true));
+
+  // Calculate yearly totals from monthly data
+  final yearlySales = await _calculatePeriodTotal('billings_monthly', currentYear, 'sales');
+  final yearlyPurchases = await _calculatePeriodTotal('billings_monthly', currentYear, 'purchases');
+  final yearlyPurchasesAfterDiscount = await _calculatePeriodTotal('billings_monthly', currentYear, 'purchasesAfterDiscount');
+  final yearlyAmountAterSales = await _calculatePeriodTotal('billings_monthly', currentYear, 'amountAterSales');
+
+  // Update yearly document
+  final yearlyDocRef = FirebaseFirestore.instance
+      .collection('billings_yearly')
+      .doc(currentYear);
+
+  await yearlyDocRef.set({
+    'year': currentYear,
+    'sales': double.parse(yearlySales.toStringAsFixed(2)),
+    'purchases': double.parse(yearlyPurchases.toStringAsFixed(2)),
+    'purchasesAfterDiscount': double.parse(yearlyPurchasesAfterDiscount.toStringAsFixed(2)),
+    'amountAterSales': double.parse(yearlyAmountAterSales.toStringAsFixed(2)),
+    'billingId': billingId,
+    'updatedAt': FieldValue.serverTimestamp(),
+  }, SetOptions(merge: true));
+}
+
+Future<double> _calculatePeriodTotal(String collection, String period, String field) async {
+  double total = 0;
+  
+  final querySnapshot = await FirebaseFirestore.instance
+      .collection(collection)
+      .where(collection == 'billings_daily' ? FieldPath.documentId : collection == 'billings_monthly' ? 'month' : 'year', 
+             isGreaterThanOrEqualTo: period)
+      .where(collection == 'billings_daily' ? FieldPath.documentId : collection == 'billings_monthly' ? 'month' : 'year', 
+             isLessThan: collection == 'billings_daily' ? '${period}~' : '${period}~')
+      .get();
+
+  for (var doc in querySnapshot.docs) {
+    final data = doc.data() as Map<String, dynamic>;
+    total += (data[field] ?? 0).toDouble();
+  }
+
+  return total;
+}
 }
