@@ -3,8 +3,8 @@ import 'package:badges/badges.dart' as custom_badge;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:new_project/order/cartPage.dart';
-import 'package:new_project/order/empty_cart_page.dart';
+import 'package:new_project/cart/cartPage.dart';
+import 'package:new_project/cart/empty_cart_page.dart';
 
 class MedicineDetailsPage extends StatefulWidget {
   final String medicineId;
@@ -480,7 +480,7 @@ class _MedicineDetailsPageState extends State<MedicineDetailsPage> {
             const SizedBox(height: 10),
             if (medicine['discount_amount'] != null) ...[
               Text(
-                'Total Discount Price: \BDT ${totalDiscountPrice.toStringAsFixed(2)}',
+                'Total Discount Price: BDT ${totalDiscountPrice.toStringAsFixed(2)}',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
