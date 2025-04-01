@@ -8,6 +8,7 @@ import 'package:flutter/material.dart' as custom_badge;
 import 'package:new_project/order/add_to_cart.dart';
 import 'package:new_project/order/cartPage.dart';
 import 'package:new_project/order/empty_cart_page.dart';
+import 'package:new_project/screen/home_screen.dart';
 
 class OrderMedicine extends StatefulWidget {
   const OrderMedicine({super.key});
@@ -234,7 +235,7 @@ class _OrderMedicineState extends State<OrderMedicine> {
     );
   }
 
-Stream<int> _getCartItemCount() {
+  Stream<int> _getCartItemCount() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return Stream.value(0);
 
@@ -257,8 +258,19 @@ Stream<int> _getCartItemCount() {
         title: const Text('Order Medicine'),
         centerTitle: true,
         elevation: 0,
-          actions: [
-    StreamBuilder<int>(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back), // Left arrow icon
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const HomeScreen(),
+              ), // Navigate to HomePage
+            );
+          },
+        ),
+        actions: [
+          StreamBuilder<int>(
             stream: _getCartItemCount(),
             builder: (context, snapshot) {
               final count = snapshot.data ?? 0;
@@ -272,16 +284,14 @@ Stream<int> _getCartItemCount() {
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     onPressed: () async {
-                      // Get the current cart count
                       final currentCount = await _getCartItemCount().first;
-                      // Navigate to CartPage with empty state if count is 0
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder:
                               (context) =>
                                   currentCount == 0
-                                      ? const EmptyCartPage() // Create this widget for empty state
+                                      ? const EmptyCartPage() // Show empty cart page if count is 0
                                       : const CartPage(),
                         ),
                       );
@@ -291,8 +301,9 @@ Stream<int> _getCartItemCount() {
               );
             },
           ),
-  ],
+        ],
       ),
+
       body: Column(
         children: [
           _buildSearchBar(),
