@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  if (userRole == 'admin')
+                  if (userRole == 'admin' || userRole == 'deliveryMan')
                     ListTile(
                       leading: const Icon(
                         Icons.receipt_rounded,
