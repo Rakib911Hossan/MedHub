@@ -66,7 +66,7 @@ class _MedicinesState extends State<Medicines> {
             filled: true,
             fillColor: Theme.of(
               context,
-            ).colorScheme.surfaceVariant.withOpacity(0.4),
+            ).colorScheme.surfaceContainerHighest.withOpacity(0.4),
             hintText: 'Search medicines...',
             hintStyle: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),

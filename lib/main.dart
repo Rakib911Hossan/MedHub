@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:new_project/screen/home_screen.dart';
+import 'package:flutter/services.dart';
 import 'package:new_project/screen/login_screen.dart';
 import 'package:new_project/screen/signup_screen.dart';
 
@@ -43,7 +43,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -54,10 +53,19 @@ class HomePage extends StatelessWidget {
         title: const Text('Med Hub'),
         centerTitle: true,
         backgroundColor: const Color(0xFF04A3BE),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.exit_to_app, color: Colors.white),
+            onPressed: () {
+              // Exit the app
+              _showExitDialog(context);
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.only(right: 30, left: 40),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
@@ -92,8 +100,6 @@ class HomePage extends StatelessWidget {
                   ]),
                 ],
               ),
-
-              const SizedBox(height: 20),
 
               // Logo Image
               Image.asset('lib/assets/v987-18a.jpg', height: 150),
@@ -132,6 +138,29 @@ class HomePage extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showExitDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Exit App'),
+        content: const Text('Are you sure you want to exit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context); // Close dialog
+              SystemNavigator.pop(); // Exit app
+            },
+            child: const Text('Exit'),
+          ),
+        ],
       ),
     );
   }
