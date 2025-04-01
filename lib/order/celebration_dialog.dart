@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:new_project/order/order_medicine.dart';
 
 class CelebrationDialog extends StatefulWidget {
   const CelebrationDialog({super.key});
@@ -146,7 +147,14 @@ class _CelebrationDialogState extends State<CelebrationDialog>
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed:
+                        () => Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OrderMedicine(),
+                          ),
+                        ),
+
                     child: const Text(
                       'Continue Shopping',
                       style: TextStyle(

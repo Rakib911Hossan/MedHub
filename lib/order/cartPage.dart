@@ -425,6 +425,8 @@ class _CartPageState extends State<CartPage> {
     await FirebaseFirestore.instance.collection('orders').doc(orderId).set({
       'orderId': orderId,
       'userId': user!.uid,
+      'userAddress': (await _getUserData())?['address'] ?? '',
+      'userPhone': (await _getUserData())?['phone']?.toString() ?? '',
       'cartId': cartDoc['cartId'], // Using user ID as cart ID if 1:1
       'items': cartDoc.data()!['medicines'],
       'deliveryDate': deliveryDate,
