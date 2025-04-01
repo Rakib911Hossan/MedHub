@@ -429,6 +429,7 @@ class _CartPageState extends State<CartPage> {
       'userPhone': (await _getUserData())?['phone']?.toString() ?? '',
       'cartId': cartDoc['cartId'], // Using user ID as cart ID if 1:1
       'items': cartDoc.data()!['medicines'],
+      'confirmedBy': '',
       'deliveryDate': deliveryDate,
       'deliveryMan': '', // To be assigned later
       'deliveryPhone': '', // To be assigned later
