@@ -14,6 +14,52 @@ class _OrdersState extends State<Orders> {
   final User? user = FirebaseAuth.instance.currentUser;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  String userRole = 'user';
+  String userName = 'User';
+  String phoneNumber = 'Phone Number';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  Future<void> _fetchUserData() async {
+    if (user != null) {
+      try {
+        DocumentSnapshot userDoc =
+            await FirebaseFirestore.instance
+                .collection('user_info')
+                .doc(user!.uid)
+                .get();
+
+        if (userDoc.exists) {
+          setState(() {
+            userRole = userDoc['role'] ?? 'user';
+            userName =
+                userDoc['name']?.toString() ?? // Ensure string conversion
+                user?.displayName ??
+                user?.email?.split('@').first ??
+                'User';
+
+            // Handle phone number conversion from int to String
+            final dynamic phoneData = userDoc['phone'];
+            phoneNumber =
+                phoneData != null
+                    ? phoneData
+                        .toString() // Convert number to string
+                    : 'Phone Number';
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching user data: $e');
+        setState(() {
+          userName = user?.email?.split('@').first ?? 'User';
+        });
+      }
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _fetchOrders() async {
     if (user == null) return [];
 
@@ -76,7 +122,8 @@ class _OrdersState extends State<Orders> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Orders'),
+        title: const Text('Your Orders'),
+        centerTitle: true,
         backgroundColor: Colors.blueGrey,
       ),
       body: FutureBuilder<List<Map<String, dynamic>>>(
@@ -99,6 +146,13 @@ class _OrdersState extends State<Orders> {
               final order = orders[index];
               final status = order['status'].toString().toLowerCase();
               final isPending = status == 'pending';
+              final isConfirmed = status == 'confirmed';
+              final canConfirm =
+                  (userRole == 'admin' || userRole == 'deliveryMan') &&
+                  isPending;
+              final canDeliver =
+                  (userRole == 'deliveryMan' || userRole == 'admin') &&
+                  isConfirmed;
 
               return Card(
                 elevation: 3,
@@ -123,7 +177,7 @@ class _OrdersState extends State<Orders> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Order #${order['orderId']}',
+                                'Order #${order['orderId']} ',
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
@@ -131,12 +185,47 @@ class _OrdersState extends State<Orders> {
                               ),
                             ],
                           ),
-                          if (isPending)
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed:
-                                  () => _deleteOrder(order['documentId']),
-                            ),
+                          Row(
+                            children: [
+                              if (isPending || userRole == 'admin')
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed:
+                                      () => _showDeleteConfirmationDialog(
+                                        context,
+                                        order['documentId'],
+                                      ),
+                                ),
+                              if (canConfirm)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.check_circle,
+                                    color: Colors.green,
+                                  ),
+                                  onPressed:
+                                      () => _showConfirmationDialog(
+                                        order,
+                                        userRole,
+                                        userName,
+                                        phoneNumber,
+                                      ),
+                                ),
+                              if (canDeliver)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.check_box,
+                                    color: Colors.green,
+                                  ),
+                                  onPressed:
+                                      () => _showDeliveredConfirmationDialog(
+                                        order,
+                                      ),
+                                ),
+                            ],
+                          ),
                         ],
                       ),
                       const SizedBox(height: 5),
@@ -170,6 +259,24 @@ class _OrdersState extends State<Orders> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (order['deliveryMan'] != null &&
+                          order['deliveryMan'].isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Delivery Man: ${order['deliveryMan']}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      if (order['deliveryPhone'] != null &&
+                          order['deliveryPhone'].isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 2),
+                          child: Text(
+                            'Contact: ${order['deliveryPhone']}',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -178,6 +285,226 @@ class _OrdersState extends State<Orders> {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _showDeleteConfirmationDialog(
+    BuildContext context,
+    String documentId,
+  ) async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false, // User must tap a button to close
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: const Text('Are you sure you want to delete this order?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () async {
+                Navigator.of(context).pop(); // Close the dialog first
+                await _deleteOrder(documentId); // Then perform deletion
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showConfirmationDialog(
+    Map<String, dynamic> order,
+    String userRole,
+    String userName,
+    String phoneNumber,
+  ) async {
+    final deliveryManController = TextEditingController(
+      text: userRole == 'admin' ? (order['deliveryMan'] ?? '') : userName,
+    );
+    final phoneController = TextEditingController(
+      text:
+          userRole == 'admin'
+              ? (order['deliveryPhone']?.toString() ?? '')
+              : phoneNumber.toString(),
+    );
+
+    return showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirm Order'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Common confirmation message
+                TextFormField(
+                  controller:
+                      deliveryManController, // Use the pre-initialized controller
+                  decoration: InputDecoration(
+                    labelText: 'Delivery Man Name',
+                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: userRole != 'admin' ? Colors.grey[200] : null,
+                  ),
+                  readOnly: userRole != 'admin',
+                  style: TextStyle(
+                    color: userRole != 'admin' ? Colors.grey[600] : null,
+                  ),
+                ),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller:
+                      phoneController, // Use the pre-initialized controller
+                  decoration: InputDecoration(
+                    labelText: 'Contact Phone',
+                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: userRole != 'admin' ? Colors.grey[200] : null,
+                  ),
+                  keyboardType: TextInputType.phone,
+                  readOnly: userRole != 'admin',
+                  style: TextStyle(
+                    color: userRole != 'admin' ? Colors.grey[600] : null,
+                  ),
+                  validator:
+                      userRole == 'admin'
+                          ? (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter phone number';
+                            }
+                            return null;
+                          }
+                          : null,
+                ),
+                if (userRole == 'deliveryMan') ...[
+                  const SizedBox(height: 15),
+                  const Text(
+                    'By confirming, you accept responsibility for this delivery',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              onPressed: () async {
+                if (phoneController.text.isEmpty ||
+                    deliveryManController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill all fields')),
+                  );
+                  return;
+                }
+
+                try {
+                  await FirebaseFirestore.instance
+                      .collection('orders')
+                      .doc(order['documentId'])
+                      .update({
+                        'status': 'confirmed',
+                        'confirmedBy': userName,
+                        'updatedAt': FieldValue.serverTimestamp(),
+                        if (userRole == 'admin') ...{
+                          'deliveryMan': deliveryManController.text,
+                          'deliveryPhone': phoneController.text,
+                        },
+                        if (userRole == 'deliveryMan') ...{
+                          'deliveryMan': userName,
+                          'deliveryPhone': phoneNumber,
+                        },
+                        'confirmedAt': FieldValue.serverTimestamp(),
+                      });
+
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('✅ Order confirmed successfully'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  setState(() {});
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                  );
+                }
+              },
+              child: const Text(
+                'Confirm',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeliveredConfirmationDialog(
+    Map<String, dynamic> order,
+  ) async {
+    return showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirm Delivery'),
+            content: const Text(
+              'Have you successfully delivered this order to the customer?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: () async {
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection('orders')
+                        .doc(order['documentId'])
+                        .update({
+                          'status': 'delivered',
+                          'deliveredAt': FieldValue.serverTimestamp(),
+                          'updatedAt': FieldValue.serverTimestamp(),
+                        });
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Order marked as delivered'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    setState(() {});
+                  } catch (e) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Confirm Delivery',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
     );
   }
 }
