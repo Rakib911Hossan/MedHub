@@ -176,9 +176,13 @@ class _AllOrdersState extends State<AllOrders> {
               final order = orders[index];
               final status = order['status'].toString().toLowerCase();
               final isPending = status == 'pending';
+              final isConfirmed = status == 'confirmed';
               final canConfirm =
                   (userRole == 'admin' || userRole == 'deliveryMan') &&
                   isPending;
+              final canDeliver =
+                  (userRole == 'deliveryMan' || userRole == 'admin') &&
+                  isConfirmed;
 
               return Card(
                 elevation: 3,
@@ -213,7 +217,7 @@ class _AllOrdersState extends State<AllOrders> {
                           ),
                           Row(
                             children: [
-                              if (isPending && userRole == 'admin')
+                              if (isPending || userRole == 'admin')
                                 IconButton(
                                   icon: const Icon(
                                     Icons.delete,
@@ -237,6 +241,17 @@ class _AllOrdersState extends State<AllOrders> {
                                         userRole,
                                         userName,
                                         phoneNumber,
+                                      ),
+                                ),
+                              if (canDeliver)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.check_box,
+                                    color: Colors.green,
+                                  ),
+                                  onPressed:
+                                      () => _showDeliveredConfirmationDialog(
+                                        order,
                                       ),
                                 ),
                             ],
@@ -310,10 +325,13 @@ class _AllOrdersState extends State<AllOrders> {
     String phoneNumber,
   ) async {
     final deliveryManController = TextEditingController(
-      text: order['deliveryMan'] ?? '', // Pre-fill if exists
+      text: userRole == 'admin' ? (order['deliveryMan'] ?? '') : userName,
     );
     final phoneController = TextEditingController(
-      text: order['deliveryPhone'] ?? '', // Pre-fill if exists
+      text:
+          userRole == 'admin'
+              ? (order['deliveryPhone']?.toString() ?? '')
+              : phoneNumber.toString(),
     );
 
     return showDialog(
@@ -326,54 +344,35 @@ class _AllOrdersState extends State<AllOrders> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 // Common confirmation message
+                
                 TextFormField(
-                  controller: TextEditingController(
-                    text:
-                        userRole == 'admin'
-                            ? (order['deliveryMan'] ?? '')
-                            : userName, // Show current user's name for non-admins
-                  ),
+                  controller:
+                      deliveryManController, // Use the pre-initialized controller
                   decoration: InputDecoration(
                     labelText: 'Delivery Man Name',
                     border: const OutlineInputBorder(),
                     filled: true,
-                    fillColor:
-                        userRole != 'admin'
-                            ? Colors.grey[200]
-                            : null, // Grey background for non-admins
+                    fillColor: userRole != 'admin' ? Colors.grey[200] : null,
                   ),
-                  readOnly: userRole != 'admin', // Only admin can edit
+                  readOnly: userRole != 'admin',
                   style: TextStyle(
-                    color:
-                        userRole != 'admin'
-                            ? Colors.grey[600]
-                            : null, // Grey text for non-admins
+                    color: userRole != 'admin' ? Colors.grey[600] : null,
                   ),
                 ),
                 const SizedBox(height: 15),
                 TextFormField(
-                  controller: TextEditingController(
-                    text:
-                        userRole == 'admin'
-                            ? (order['deliveryPhone'] ?? '')
-                            : phoneNumber, // Show current user's phone for non-admins
-                  ),
+                  controller:
+                      phoneController, // Use the pre-initialized controller
                   decoration: InputDecoration(
                     labelText: 'Contact Phone',
                     border: const OutlineInputBorder(),
                     filled: true,
-                    fillColor:
-                        userRole != 'admin'
-                            ? Colors.grey[200]
-                            : null, // Grey background for non-admins
+                    fillColor: userRole != 'admin' ? Colors.grey[200] : null,
                   ),
                   keyboardType: TextInputType.phone,
-                  readOnly: userRole != 'admin', // Only admin can edit
+                  readOnly: userRole != 'admin',
                   style: TextStyle(
-                    color:
-                        userRole != 'admin'
-                            ? Colors.grey[600]
-                            : null, // Grey text for non-admins
+                    color: userRole != 'admin' ? Colors.grey[600] : null,
                   ),
                   validator:
                       userRole == 'admin'
@@ -383,7 +382,7 @@ class _AllOrdersState extends State<AllOrders> {
                             }
                             return null;
                           }
-                          : null, // No validation for non-admins
+                          : null,
                 ),
                 if (userRole == 'deliveryMan') ...[
                   const SizedBox(height: 15),
@@ -403,7 +402,8 @@ class _AllOrdersState extends State<AllOrders> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               onPressed: () async {
-                if (userRole == 'admin') {
+                if (phoneController.text.isEmpty ||
+                    deliveryManController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Please fill all fields')),
                   );
@@ -416,17 +416,17 @@ class _AllOrdersState extends State<AllOrders> {
                       .doc(order['documentId'])
                       .update({
                         'status': 'confirmed',
+                        'confirmedBy': userName,
                         'updatedAt': FieldValue.serverTimestamp(),
-                        if(userRole == 'admin') ...{
+                        if (userRole == 'admin') ...{
                           'deliveryMan': deliveryManController.text,
                           'deliveryPhone': phoneController.text,
                         },
-                        'deliveryMan': userName,
-                        'deliveryPhone': phoneNumber,
                         if (userRole == 'deliveryMan') ...{
-                          'confirmedBy': userName,
-                          'confirmedAt': FieldValue.serverTimestamp(),
+                          'deliveryMan': userName,
+                          'deliveryPhone': phoneNumber,
                         },
+                        'confirmedAt': FieldValue.serverTimestamp(),
                       });
 
                   Navigator.pop(context);
@@ -451,6 +451,60 @@ class _AllOrdersState extends State<AllOrders> {
           ],
         );
       },
+    );
+  }
+
+  Future<void> _showDeliveredConfirmationDialog(
+    Map<String, dynamic> order,
+  ) async {
+    return showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Confirm Delivery'),
+            content: const Text(
+              'Have you successfully delivered this order to the customer?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                onPressed: () async {
+                  try {
+                    await FirebaseFirestore.instance
+                        .collection('orders')
+                        .doc(order['documentId'])
+                        .update({
+                          'status': 'delivered',
+                          'deliveredAt': FieldValue.serverTimestamp(),
+                          'updatedAt': FieldValue.serverTimestamp(),
+                        });
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Order marked as delivered'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                    setState(() {});
+                  } catch (e) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('❌ Error: ${e.toString()}')),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Confirm Delivery',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
     );
   }
 }
