@@ -155,6 +155,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
+                  ListTile(
+                    leading: const Icon(
+                      Icons.receipt_rounded,
+                      color: Color.fromARGB(255, 5, 26, 148),
+                    ),
+                    title: const Text(
+                      'All Orders',
+                      style: TextStyle(
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    tileColor: Colors.grey[100],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Orders(),
+                        ),
+                      );
+                    },
+                  ),
                   if (userRole == 'admin')
                     ListTile(
                       leading: const Icon(

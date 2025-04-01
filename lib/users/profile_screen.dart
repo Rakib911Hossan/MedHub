@@ -98,6 +98,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       // Display user icon as the first letter of email
                       CircleAvatar(
                         radius: 50,
+                        backgroundColor:
+                            Colors
+                                .blueAccent,
                         child: Text(
                           userData?['email']?.substring(0, 1).toUpperCase() ??
                               'N', // First letter of email
@@ -105,10 +108,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontSize: 40,
                             fontWeight: FontWeight.bold,
                           ),
-                        ),
-                        backgroundColor:
-                            Colors
-                                .blueAccent, // You can customize the background color
+                        ), // You can customize the background color
                       ),
                       const SizedBox(height: 10),
                       Text(

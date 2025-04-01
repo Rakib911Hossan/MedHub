@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class Orders extends StatefulWidget {
-  const Orders({Key? key}) : super(key: key);
+  const Orders({super.key});
 
   @override
   _OrdersState createState() => _OrdersState();
@@ -17,14 +17,59 @@ class _OrdersState extends State<Orders> {
   Future<List<Map<String, dynamic>>> _fetchOrders() async {
     if (user == null) return [];
 
-    QuerySnapshot querySnapshot = await _firestore
-        .collection('orders')
-        .where('userId', isEqualTo: user!.uid)
-        // .orderBy('createdAt', descending: true)
-        .get();
-    debugPrint("Current User ID: ${user?.uid}");
+    QuerySnapshot querySnapshot =
+        await _firestore
+            .collection('orders')
+            .where('userId', isEqualTo: user!.uid)
+            .orderBy('createdAt', descending: true)
+            .get();
 
-    return querySnapshot.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+    return querySnapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      // Ensure the document ID is included for deletion
+      data['documentId'] = doc.id;
+      return data;
+    }).toList();
+  }
+
+  Future<void> _deleteOrder(String documentId) async {
+    try {
+      await _firestore.collection('orders').doc(documentId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order deleted successfully')),
+      );
+      setState(() {}); // Refresh the list after deletion
+    } catch (error) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error deleting order: $error')));
+    }
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orange[100]!;
+      case 'confirmed':
+        return Colors.blue[100]!;
+      case 'delivered':
+        return Colors.green[100]!;
+      default:
+        return Colors.grey[100]!;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Icons.access_time;
+      case 'confirmed':
+        return Icons.check_circle_outline;
+      case 'delivered':
+        return Icons.local_shipping;
+      default:
+        return Icons.receipt;
+    }
   }
 
   @override
@@ -52,31 +97,81 @@ class _OrdersState extends State<Orders> {
             itemCount: orders.length,
             itemBuilder: (context, index) {
               final order = orders[index];
+              final status = order['status'].toString().toLowerCase();
+              final isPending = status == 'pending';
+
               return Card(
                 elevation: 3,
+                margin: const EdgeInsets.symmetric(vertical: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: ListTile(
-                  leading: const Icon(Icons.receipt_long, color: Colors.indigo),
-                  title: Text(
-                    'Order ID: ${order['orderId']}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Column(
+                color: _getStatusColor(status),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Status: ${order['status']}'),
-                      Text('Total: BDT ${order['totalAmount'].toStringAsFixed(2)}'),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                _getStatusIcon(status),
+                                color: Colors.blueGrey,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Order #${order['orderId']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (isPending)
+                            IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed:
+                                  () => _deleteOrder(order['documentId']),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        'Status: ${order['status']}',
+                        style: TextStyle(
+                          color: Colors.blueGrey[800],
+                          fontWeight: FontWeight.w500,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        'Total: BDT ${order['totalAmount'].toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Order Date: ${DateFormat('MMM dd, yyyy - hh:mm a').format(order['createdAt'].toDate())}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
                       Text(
                         'Delivery Date: ${DateFormat('MMM dd, yyyy').format(order['deliveryDate'].toDate())}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Address: ${order['userAddress']}',
+                        style: const TextStyle(fontSize: 12),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  tileColor: Colors.grey[100],
-                  onTap: () {
-                    // Navigate to order details if needed
-                  },
                 ),
               );
             },
