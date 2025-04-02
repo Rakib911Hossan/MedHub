@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:new_project/doctors/doctors_profile.dart';
 import 'package:new_project/order/all_orders.dart';
 import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/medicine/medicines.dart';
@@ -21,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final User? user = FirebaseAuth.instance.currentUser;
   String userRole = 'user';
   String userName = 'User';
+  String userId = '';
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 user?.displayName ??
                 user?.email?.split('@').first ??
                 'User';
+            userId = user!.uid;
           });
         }
       } catch (e) {
@@ -104,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Home',
                       style: TextStyle(
                         color: Colors.black87,
-                        fontWeight: FontWeight.w600,
+                        // fontWeight: FontWeight.w600,
                       ),
                     ),
                     tileColor: Colors.grey[100],
@@ -118,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Profile',
                       style: TextStyle(
                         color: Colors.black87,
-                        fontWeight: FontWeight.w600,
+                        // fontWeight: FontWeight.w600,
                       ),
                     ),
                     tileColor: Colors.grey[100],
@@ -140,7 +143,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Orders',
                       style: TextStyle(
                         color: Colors.black87,
-                        fontWeight: FontWeight.w600,
+                        // fontWeight: FontWeight.w600,
                       ),
                     ),
                     tileColor: Colors.grey[100],
@@ -164,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'All Orders',
                         style: TextStyle(
                           color: Colors.black87,
-                          fontWeight: FontWeight.w600,
+                          // fontWeight: FontWeight.w600,
                         ),
                       ),
                       tileColor: Colors.grey[100],
@@ -190,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Medicines',
                         style: TextStyle(
                           color: Colors.black87,
-                          fontWeight: FontWeight.w600,
+                          // fontWeight: FontWeight.w600,
                         ),
                       ),
                       tileColor: Colors.grey[100],
@@ -199,6 +202,26 @@ class _HomeScreenState extends State<HomeScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (context) => const Medicines(),
+                          ),
+                        );
+                      },
+                    ),
+                  if (userRole == 'admin' || userRole == 'doctor')
+                    ListTile(
+                      leading: const Icon(
+                        Icons.medical_services,
+                        color: Color.fromARGB(255, 46, 125, 219),
+                      ),
+                      title: const Text(
+                        'Doctors Profiles',
+                        style: TextStyle(color: Colors.black87),
+                      ),
+                      tileColor: Colors.grey[100],
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                           builder: (context) => AddDoctorsProfile(), // 
                           ),
                         );
                       },
@@ -213,7 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         'Users',
                         style: TextStyle(
                           color: Colors.black87,
-                          fontWeight: FontWeight.w600,
+                          // fontWeight: FontWeight.w600,
                         ),
                       ),
                       tileColor: Colors.grey[100],
@@ -235,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       'Logout',
                       style: TextStyle(
                         color: Colors.black87,
-                        fontWeight: FontWeight.w600,
+                        // fontWeight: FontWeight.w600,
                       ),
                     ),
                     tileColor: Colors.grey[100],
