@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:new_project/doctors/doctors_profile.dart';
+import 'package:new_project/doctors/edit_doctors_profile.dart';
 import 'package:new_project/order/all_orders.dart';
 import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/medicine/medicines.dart';
@@ -217,15 +218,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(color: Colors.black87),
                       ),
                       tileColor: Colors.grey[100],
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                           builder: (context) => AddDoctorsProfile(), // 
-                          ),
-                        );
+                      onTap: () async {
+                        bool hasProfile = await _fetchExistingProfile();
+
+                        if (!hasProfile) {
+                          // If no profile exists, navigate to AddDoctorsProfile
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AddDoctorsProfile(),
+                            ),
+                          );
+                        }
                       },
                     ),
+
                   if (userRole == 'admin')
                     ListTile(
                       leading: const Icon(
@@ -436,5 +443,50 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+  }
+
+  Future<bool> _fetchExistingProfile() async {
+    if (userId.isEmpty) {
+      debugPrint('Error: userId is empty.');
+      return false;
+    }
+
+    try {
+      var existingProfile =
+          await FirebaseFirestore.instance
+              .collection('doctors')
+              .where('doctorId', isEqualTo: userId)
+              .get();
+
+      debugPrint('Fetched profile count: ${existingProfile.docs.length}');
+
+      if (existingProfile.docs.isNotEmpty) {
+        debugPrint(
+          'Doctor Profile Found: ${existingProfile.docs.first.data()}',
+        );
+
+        // Navigate to edit screen
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (context) => EditDoctorProfile(
+                    doctorId: existingProfile.docs.first.id,
+                    existingData: existingProfile.docs.first.data(),
+                  ),
+            ),
+          );
+        });
+
+        return true; // Profile exists
+      } else {
+        debugPrint('No existing profile found for userId: $userId');
+        return false; // Profile does not exist
+      }
+    } catch (e) {
+      debugPrint('Error fetching doctor profile: $e');
+      return false;
+    }
   }
 }
