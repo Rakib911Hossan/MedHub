@@ -43,6 +43,7 @@ dependencies:
   badges: ^3.0.0
   lottie: ^2.2.0 # Add the lottie package with the latest version
   intl: any
+  url_launcher: ^6.1.7
 
   # permission_handler: ^10.4.0 
 
