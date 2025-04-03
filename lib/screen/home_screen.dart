@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
+import 'package:new_project/doctors/doctors_list.dart';
 import 'package:new_project/doctors/doctors_profile.dart';
 import 'package:new_project/doctors/edit_doctors_profile.dart';
 import 'package:new_project/order/all_orders.dart';
@@ -207,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                  if (userRole == 'admin' || userRole == 'doctor')
+                  if (userRole == 'doctor' || userRole == 'admin')
                     ListTile(
                       leading: const Icon(
                         Icons.medical_services,
@@ -356,7 +357,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     'Get expert medical advice from your home',
                     const Color.fromARGB(255, 93, 166, 238), // Azure blue
                     () {
-                      // Navigation for consult doctor
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const DoctorsList(),
+                        ),
+                      );
                     },
                   ),
                 ],
