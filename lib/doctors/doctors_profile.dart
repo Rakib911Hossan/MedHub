@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:new_project/doctors/edit_doctors_profile.dart';
 
 class AddDoctorsProfile extends StatefulWidget {
   const AddDoctorsProfile({Key? key}) : super(key: key);
@@ -11,6 +13,15 @@ class AddDoctorsProfile extends StatefulWidget {
 }
 
 class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
+
+ final User? user = FirebaseAuth.instance.currentUser;
+  String userRole = '';
+  String userName = '';
+  String userId = '';
+  String userEmail = '';
+  String userPhone = '';
+
+
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _specialtyController = TextEditingController();
@@ -20,6 +31,48 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
   final TextEditingController _appointmentLink = TextEditingController();
   final List<String> _selectedDays = [];
   final List<String> _weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+ 
+
+  Future<void> _fetchUserData() async {
+    if (user != null) {
+      try {
+        DocumentSnapshot userDoc =
+            await FirebaseFirestore.instance
+                .collection('user_info')
+                .doc(user!.uid)
+                .get();
+
+        if (userDoc.exists) {
+          setState(() {
+            userRole = userDoc['role'] ?? 'user';
+            userName =
+                userDoc['name'] ??
+                user?.displayName ??
+                user?.email?.split('@').first ??
+                'User';
+            userId = user!.uid;
+            userEmail = user?.email ?? '';
+            userPhone = userDoc['phone'].toString();
+                 _nameController.text = userName;
+          _phoneController.text = '0$userPhone';
+          _emailController.text = userEmail;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error fetching user data: $e');
+        setState(() {
+          userName = user?.email?.split('@').first ?? 'User';
+        });
+      }
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
 
   File? _selectedImage;
   String _gender = 'Male'; // Default gender selection
@@ -120,38 +173,41 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
   }
 
   void _addDoctorProfile() async {
-    if (_nameController.text.isEmpty ||
-        _specialtyController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _hospitalController.text.isEmpty ||
-        _availableTime.isEmpty ||
-        _appointmentLink.text.isEmpty ||
-        _selectedDays.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields")),
-      );
-      return;
-    }
-
-    await _firestore.collection('doctors').add({
-      'name': _nameController.text,
-      'specialty': _specialtyController.text,
-      'phone': _phoneController.text,
-      'email': _emailController.text,
-      'hospital': _hospitalController.text,
-      'availableDays': _selectedDays,
-      'availableTime': _availableTime,
-      'appointmentLink': _appointmentLink.text,
-      'profileImage': _selectedImage?.path ?? '', // Save the image path if available
-      'gender': _gender, // Store the selected gender
-      'appointments': [],
-      'createdAt': Timestamp.now(),
-    });
-
-    _showSuccessPopup(); // Show success popup
-
+  if (_nameController.text.isEmpty ||
+      _specialtyController.text.isEmpty ||
+      _phoneController.text.isEmpty ||
+      _emailController.text.isEmpty ||
+      _hospitalController.text.isEmpty ||
+      _availableTime.isEmpty ||
+      _appointmentLink.text.isEmpty ||
+      _selectedDays.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please fill in all fields")),
+    );
+    return;
   }
+
+  // If no existing profile, add new profile
+  await _firestore.collection('doctors').add({
+    'name': _nameController.text,
+    'specialty': _specialtyController.text,
+    'phone': _phoneController.text,
+    'email': _emailController.text,
+    'hospital': _hospitalController.text,
+    'availableDays': _selectedDays,
+    'availableTime': _availableTime,
+    'appointmentLink': _appointmentLink.text,
+    'profileImage': _selectedImage?.path ?? '',
+    'gender': _gender,
+    'appointments': [],
+    'doctorId': userId,
+    'isAvailable': true,
+    'createdAt': Timestamp.now(),
+  });
+
+  _showSuccessPopup();
+}
+
 
   @override
   Widget build(BuildContext context) {
