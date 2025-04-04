@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -138,164 +139,180 @@ class _DoctorsListState extends State<DoctorsList> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Doctors List'),
-        backgroundColor: Colors.blueGrey,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color.fromARGB(255, 225, 231, 243),
-              const Color.fromARGB(255, 212, 231, 240),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Doctors List'),
+      backgroundColor: Colors.blueGrey,
+    ),
+    body: Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color.fromARGB(255, 225, 231, 243),
+            const Color.fromARGB(255, 212, 231, 240),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(
-          children: [
-            _buildSearchBar(),
-            Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _firestore.collection('doctors').snapshots(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  }
+      ),
+      child: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('doctors').snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                }
 
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-                  if (snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text('No doctors found'));
-                  }
+                if (snapshot.data!.docs.isEmpty) {
+                  return const Center(child: Text('No doctors found'));
+                }
 
-                  if (_groupedDoctors.isEmpty ||
-                      snapshot.data!.docs.length !=
-                          _groupedDoctors.values.fold(
-                            0,
-                            (sum, list) => sum + list.length,
-                          )) {
-                    _groupDoctorsBySpecialty(snapshot.data!.docs);
-                  }
+                if (_groupedDoctors.isEmpty ||
+                    snapshot.data!.docs.length !=
+                        _groupedDoctors.values.fold(
+                          0,
+                          (sum, list) => sum + list.length,
+                        )) {
+                  _groupDoctorsBySpecialty(snapshot.data!.docs);
+                }
 
-                  if (_filteredDoctors.isEmpty && _searchQuery.isNotEmpty) {
-                    return const Center(
-                      child: Text('No matching doctors found'),
-                    );
-                  }
+                if (_filteredDoctors.isEmpty && _searchQuery.isNotEmpty) {
+                  return const Center(
+                    child: Text('No matching doctors found'),
+                  );
+                }
 
-                  return ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    itemCount: _filteredDoctors.length,
-                    itemBuilder: (context, index) {
-                      final specialty = _filteredDoctors.keys.elementAt(index);
-                      final doctors = _filteredDoctors[specialty]!;
+                return ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  itemCount: _filteredDoctors.length,
+                  itemBuilder: (context, index) {
+                    final specialty = _filteredDoctors.keys.elementAt(index);
+                    final doctors = _filteredDoctors[specialty]!;
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0,
-                              vertical: 8.0,
-                            ),
-                            child: Text(
-                              specialty,
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blueGrey,
-                              ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0,
+                            vertical: 8.0,
+                          ),
+                          child: Text(
+                            specialty,
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blueGrey,
                             ),
                           ),
-                          ...doctors.map((doctor) {
-                            var data = doctor.data() as Map<String, dynamic>;
+                        ),
+                        ...doctors.map((doctor) {
+                          var data = doctor.data() as Map<String, dynamic>;
 
-                            return Card(
-                              elevation: 4,
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 40,
-                                          backgroundColor: Colors.grey[200],
-                                          backgroundImage:
-                                              data['profileImage'] != null &&
-                                                      data['profileImage']
-                                                          .isNotEmpty
-                                                  ? FileImage(
+                          // Handle appointments logic: Check if current user has an appointment
+                          final appointments = data['appointments'] as List<dynamic>?;
+                          final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+                          // Check if currentUserId matches any appointment's uid
+                          bool showPhoneNumber = false;
+                          if (appointments != null) {
+                            for (var appointment in appointments) {
+                              if (appointment[0] == currentUserId) {
+                                showPhoneNumber = true;
+                                break;
+                              }
+                            }
+                          }
+
+                          return Card(
+                            elevation: 4,
+                            margin: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 40,
+                                        backgroundColor: Colors.grey[200],
+                                        backgroundImage:
+                                            data['profileImage'] != null &&
+                                                    data['profileImage']
+                                                        .isNotEmpty
+                                                ? FileImage(
                                                     File(data['profileImage']),
                                                   ) // Use FileImage for local files
-                                                  : const AssetImage(
+                                                : const AssetImage(
                                                         'lib/assets/doctor.png',
                                                       )
-                                                      as ImageProvider,
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                data['name'] ?? 'No Name',
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                ),
+                                                    as ImageProvider,
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              data['name'] ?? 'No Name',
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.bold,
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                data['hospital'] ??
-                                                    'No Hospital',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.grey[600],
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Chip(
-                                          backgroundColor:
-                                              data['isAvailable'] == true
-                                                  ? Colors.green[100]
-                                                  : Colors.red[100],
-                                          label: Text(
-                                            data['isAvailable'] == true
-                                                ? 'Available'
-                                                : 'Unavailable',
-                                            style: TextStyle(
-                                              color:
-                                                  data['isAvailable'] == true
-                                                      ? Colors.green
-                                                      : Colors.red,
                                             ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              data['hospital'] ??
+                                                  'No Hospital',
+                                              style: TextStyle(
+                                                fontSize: 14,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Chip(
+                                        backgroundColor:
+                                            data['isAvailable'] == true
+                                                ? Colors.green[100]
+                                                : Colors.red[100],
+                                        label: Text(
+                                          data['isAvailable'] == true
+                                              ? 'Available'
+                                              : 'Unavailable',
+                                          style: TextStyle(
+                                            color: data['isAvailable'] == true
+                                                ? Colors.green
+                                                : Colors.red,
                                           ),
                                         ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Divider(),
-                                    const SizedBox(height: 8),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  const Divider(),
+                                  const SizedBox(height: 8),
+                                  // Show appointment information if the user has an appointment
+                                  if (showPhoneNumber) ...[
                                     Row(
                                       children: [
                                         Icon(
@@ -308,88 +325,91 @@ class _DoctorsListState extends State<DoctorsList> {
                                       ],
                                     ),
                                     const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.email,
-                                          size: 16,
-                                          color: Colors.blue,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(data['email'] ?? 'No Email'),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.access_time,
-                                          size: 16,
-                                          color: Colors.blue,
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Text(
-                                          data['availableTime'] ??
-                                              'No Time Specified',
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Wrap(
-                                      spacing: 8,
-                                      children:
-                                          (data['availableDays']
-                                                      as List<dynamic>? ??
-                                                  [])
-                                              .map(
-                                                (day) => Chip(
-                                                  label: Text(day.toString()),
-                                                  backgroundColor:
-                                                      Colors.blue[50],
-                                                ),
-                                              )
-                                              .toList(),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    if (data['appointmentLink'] != null &&
-                                        data['appointmentLink'].isNotEmpty)
-                                      ElevatedButton(
-                                        onPressed:
-                                            () => _launchAppointmentLink(
-                                              data['appointmentLink'],
-                                            ),
-                                        child: const Text('Book Appointment'),
-                                        style: ElevatedButton.styleFrom(
-                                          minimumSize: const Size(
-                                            double.infinity,
-                                            40,
-                                          ),
-                                        ),
-                                      ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Added: ${_formatTimestamp(data['createdAt'] as Timestamp)}',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey[600],
-                                        fontStyle: FontStyle.italic,
-                                      ),
-                                    ),
                                   ],
-                                ),
+                                  // Email and available time
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.email,
+                                        size: 16,
+                                        color: Colors.blue,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(data['email'] ?? 'No Email'),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time,
+                                        size: 16,
+                                        color: Colors.blue,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        data['availableTime'] ??
+                                            'No Time Specified',
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    children:
+                                        (data['availableDays']
+                                                    as List<dynamic>? ??
+                                                [])
+                                            .map(
+                                              (day) => Chip(
+                                                label: Text(day.toString()),
+                                                backgroundColor:
+                                                    Colors.blue[50],
+                                              ),
+                                            )
+                                            .toList(),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  if (data['appointmentLink'] != null &&
+                                      data['appointmentLink'].isNotEmpty)
+                                    ElevatedButton(
+                                      onPressed:
+                                          () => _launchAppointmentLink(
+                                        data['appointmentLink'],
+                                      ),
+                                      child: const Text('Book Appointment'),
+                                      style: ElevatedButton.styleFrom(
+                                        minimumSize: const Size(
+                                          double.infinity,
+                                          40,
+                                        ),
+                                      ),
+                                    ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Added: ${_formatTimestamp(data['createdAt'] as Timestamp)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[600],
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            );
-                          }).toList(),
-                        ],
-                      );
-                    },
-                  );
-                },
-              ),
+                            ),
+                          );
+                        }).toList(),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
