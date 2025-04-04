@@ -350,6 +350,26 @@ class _DoctorsListState extends State<DoctorsList> {
                                               )
                                               .toList(),
                                     ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                      Icon(
+                                        Icons.attach_money,
+                                        size: 16,
+                                        color: Colors.blue,
+                                      ),
+                                      Text(data['consultationFee'] != null
+                                          ? 'Consultation Fee:'
+                                          : 'No Fees Specified'),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        data['consultationFee'] != null
+                                          ? 'BDT ${data['consultationFee']}'
+                                          : 'No Fees Specified',
+                                          style: TextStyle(color: Colors.green),
+                                      ),
+                                      ],
+                                    ),
                                     const SizedBox(height: 16),
                                     if (data['appointmentLink'] != null &&
                                         data['appointmentLink'].isNotEmpty)
