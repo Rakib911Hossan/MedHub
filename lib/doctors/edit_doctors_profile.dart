@@ -35,6 +35,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
   late TextEditingController _emailController;
   late TextEditingController _hospitalController;
   late TextEditingController _appointmentLink;
+  late TextEditingController _consultationFeeController;
   late List<String> _selectedDays;
   late String _availableTime;
   late String _gender;
@@ -59,15 +60,19 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
     _appointmentLink = TextEditingController(
       text: widget.existingData['appointmentLink'],
     );
+    _consultationFeeController = TextEditingController(
+      text: widget.existingData['consultationFee'],
+    );
     _availableTime = widget.existingData['availableTime'] ?? '';
     _selectedDays = List<String>.from(
       widget.existingData['availableDays'] ?? [],
     );
     _gender = widget.existingData['gender'] ?? 'Male';
-    
-    _selectedImage = widget.existingData['profileImage'] != null
-        ? File(widget.existingData['profileImage'])
-        : null;
+
+    _selectedImage =
+        widget.existingData['profileImage'] != null
+            ? File(widget.existingData['profileImage'])
+            : null;
   }
 
   Future<void> _pickImage() async {
@@ -181,6 +186,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
         _hospitalController.text.isEmpty ||
         _availableTime.isEmpty ||
         _appointmentLink.text.isEmpty ||
+        _consultationFeeController.text.isEmpty ||
         _selectedDays.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all fields")),
@@ -197,6 +203,7 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
       'availableDays': _selectedDays,
       'availableTime': _availableTime,
       'appointmentLink': _appointmentLink.text,
+      'consultationFee': _consultationFeeController.text,
       'profileImage':
           _selectedImage?.path ?? widget.existingData['profileImage'],
       'gender': _gender,
@@ -232,36 +239,81 @@ class _EditDoctorProfileState extends State<EditDoctorProfile> {
               children: [
                 _buildImageSection(),
                 const SizedBox(height: 20),
+
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: "Doctor's Name"),
+                  decoration: const InputDecoration(
+                    labelText: "Doctor's Name",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _specialtyController,
-                  decoration: const InputDecoration(labelText: "Specialty"),
+                  decoration: const InputDecoration(
+                    labelText: "Specialty",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: "Phone"),
+                  decoration: const InputDecoration(
+                    labelText: "Phone",
+                    border: OutlineInputBorder(),
+                  ),
                   keyboardType: TextInputType.phone,
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: "Email"),
+                  decoration: const InputDecoration(
+                    labelText: "Email",
+                    border: OutlineInputBorder(),
+                  ),
                   keyboardType: TextInputType.emailAddress,
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _hospitalController,
-                  decoration: const InputDecoration(labelText: "Hospital"),
+                  decoration: const InputDecoration(
+                    labelText: "Hospital",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+
                 const SizedBox(height: 10),
+
                 TextField(
                   controller: _appointmentLink,
                   decoration: const InputDecoration(
                     labelText: "Appointment Link",
+                    hintText: "https://example.com/appointment",
+                    border: OutlineInputBorder(),
                   ),
                   keyboardType: TextInputType.url,
                 ),
+
+                const SizedBox(height: 10),
+
+                TextField(
+                  controller: _consultationFeeController,
+                  decoration: const InputDecoration(
+                    labelText: "Consultation Fee",
+                    prefixText: "BDT ", // Adds "BDT " inside the input field
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+
                 const SizedBox(height: 10),
                 const Text("Available Time"),
                 GestureDetector(

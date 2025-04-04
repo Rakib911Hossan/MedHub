@@ -13,14 +13,12 @@ class AddDoctorsProfile extends StatefulWidget {
 }
 
 class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
-
- final User? user = FirebaseAuth.instance.currentUser;
+  final User? user = FirebaseAuth.instance.currentUser;
   String userRole = '';
   String userName = '';
   String userId = '';
   String userEmail = '';
   String userPhone = '';
-
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController _nameController = TextEditingController();
@@ -29,10 +27,18 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _hospitalController = TextEditingController();
   final TextEditingController _appointmentLink = TextEditingController();
+  final TextEditingController _consultationFeeController =
+      TextEditingController();
   final List<String> _selectedDays = [];
-  final List<String> _weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-
- 
+  final List<String> _weekdays = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
 
   Future<void> _fetchUserData() async {
     if (user != null) {
@@ -54,9 +60,9 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
             userId = user!.uid;
             userEmail = user?.email ?? '';
             userPhone = userDoc['phone'].toString();
-                 _nameController.text = userName;
-          _phoneController.text = '0$userPhone';
-          _emailController.text = userEmail;
+            _nameController.text = userName;
+            _phoneController.text = '0$userPhone';
+            _emailController.text = userEmail;
           });
         }
       } catch (e) {
@@ -77,7 +83,7 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
   File? _selectedImage;
   String _gender = 'Male'; // Default gender selection
   String _availableTime = ''; // Available time will be stored here
-  
+
   // Function to pick the start and end times for the available time
   Future<void> _selectAvailableTime() async {
     final TimeOfDay? startTime = await showTimePicker(
@@ -93,12 +99,15 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
     if (endTime == null) return;
 
     setState(() {
-      _availableTime = '${startTime.format(context)} - ${endTime.format(context)}';
+      _availableTime =
+          '${startTime.format(context)} - ${endTime.format(context)}';
     });
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       setState(() {
         _selectedImage = File(pickedFile.path);
@@ -120,13 +129,14 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _selectedImage != null
-                  ? Image.file(
-                      _selectedImage!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _buildFallbackImage(),
-                    )
-                  : _buildFallbackImage(),
+              child:
+                  _selectedImage != null
+                      ? Image.file(
+                        _selectedImage!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _buildFallbackImage(),
+                      )
+                      : _buildFallbackImage(),
             ),
           ),
           Positioned(
@@ -173,41 +183,43 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
   }
 
   void _addDoctorProfile() async {
-  if (_nameController.text.isEmpty ||
-      _specialtyController.text.isEmpty ||
-      _phoneController.text.isEmpty ||
-      _emailController.text.isEmpty ||
-      _hospitalController.text.isEmpty ||
-      _availableTime.isEmpty ||
-      _appointmentLink.text.isEmpty ||
-      _selectedDays.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please fill in all fields")),
-    );
-    return;
+    if (_nameController.text.isEmpty ||
+        _specialtyController.text.isEmpty ||
+        _phoneController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _hospitalController.text.isEmpty ||
+        _availableTime.isEmpty ||
+        _appointmentLink.text.isEmpty ||
+        _consultationFeeController.text.isEmpty ||
+        _selectedDays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please fill in all fields")),
+      );
+      return;
+    }
+
+    // If no existing profile, add new profile
+    await _firestore.collection('doctors').add({
+      'name': _nameController.text,
+      'specialty': _specialtyController.text,
+      'phone': _phoneController.text,
+      'email': _emailController.text,
+      'hospital': _hospitalController.text,
+      'availableDays': _selectedDays,
+      'availableTime': _availableTime,
+      'appointmentLink': _appointmentLink.text,
+      'consultationFee': _consultationFeeController.text,
+      'profileImage': _selectedImage?.path ?? '',
+      'gender': _gender,
+      'appointments': [],
+      'appointmentStatus': '',
+      'doctorId': userId,
+      'isAvailable': true,
+      'createdAt': Timestamp.now(),
+    });
+
+    _showSuccessPopup();
   }
-
-  // If no existing profile, add new profile
-  await _firestore.collection('doctors').add({
-    'name': _nameController.text,
-    'specialty': _specialtyController.text,
-    'phone': _phoneController.text,
-    'email': _emailController.text,
-    'hospital': _hospitalController.text,
-    'availableDays': _selectedDays,
-    'availableTime': _availableTime,
-    'appointmentLink': _appointmentLink.text,
-    'profileImage': _selectedImage?.path ?? '',
-    'gender': _gender,
-    'appointments': [],
-    'doctorId': userId,
-    'isAvailable': true,
-    'createdAt': Timestamp.now(),
-  });
-
-  _showSuccessPopup();
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -219,7 +231,10 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [const Color.fromARGB(255, 225, 231, 243), const Color.fromARGB(255, 212, 231, 240)],
+            colors: [
+              const Color.fromARGB(255, 225, 231, 243),
+              const Color.fromARGB(255, 212, 231, 240),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -232,48 +247,102 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
               children: [
                 _buildImageSection(),
                 const SizedBox(height: 20),
+
                 TextField(
                   controller: _nameController,
-                  decoration: const InputDecoration(labelText: "Doctor's Name"),
+                  decoration: const InputDecoration(
+                    labelText: "Doctor's Name",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _specialtyController,
-                  decoration: const InputDecoration(labelText: "Specialty"),
+                  decoration: const InputDecoration(
+                    labelText: "Specialty",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _phoneController,
-                  decoration: const InputDecoration(labelText: "Phone"),
+                  decoration: const InputDecoration(
+                    labelText: "Phone",
+                    border: OutlineInputBorder(),
+                  ),
                   keyboardType: TextInputType.phone,
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _emailController,
-                  decoration: const InputDecoration(labelText: "Email"),
+                  decoration: const InputDecoration(
+                    labelText: "Email",
+                    border: OutlineInputBorder(),
+                  ),
                   keyboardType: TextInputType.emailAddress,
                 ),
+
+                const SizedBox(height: 10),
+
                 TextField(
                   controller: _hospitalController,
-                  decoration: const InputDecoration(labelText: "Hospital"),
+                  decoration: const InputDecoration(
+                    labelText: "Hospital",
+                    border: OutlineInputBorder(),
+                  ),
                 ),
+
                 const SizedBox(height: 10),
+
                 TextField(
                   controller: _appointmentLink,
-                  decoration: const InputDecoration(labelText: "Appointment Link"),
+                  decoration: const InputDecoration(
+                    labelText: "Appointment Link",
+                    hintText: "https://example.com/appointment",
+                    border: OutlineInputBorder(),
+                  ),
                   keyboardType: TextInputType.url,
                 ),
+
                 const SizedBox(height: 10),
+
+                TextField(
+                  controller: _consultationFeeController,
+                  decoration: const InputDecoration(
+                    labelText: "Consultation Fee",
+                    prefixText: "BDT ", // Adds "BDT " inside the input field
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                ),
+
+                const SizedBox(height: 10),
+
                 const Text("Available Time"),
                 GestureDetector(
                   onTap: _selectAvailableTime,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 10,
+                      horizontal: 16,
+                    ),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.grey),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      _availableTime.isEmpty ? "Select Available Time" : _availableTime,
+                      _availableTime.isEmpty
+                          ? "Select Available Time"
+                          : _availableTime,
                       style: TextStyle(
-                        color: _availableTime.isEmpty ? Colors.grey : Colors.black,
+                        color:
+                            _availableTime.isEmpty ? Colors.grey : Colors.black,
                       ),
                     ),
                   ),
@@ -282,21 +351,22 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
                 const Text("Available Days"),
                 Wrap(
                   spacing: 8.0,
-                  children: _weekdays.map((day) {
-                    return FilterChip(
-                      label: Text(day),
-                      selected: _selectedDays.contains(day),
-                      onSelected: (bool selected) {
-                        setState(() {
-                          if (selected) {
-                            _selectedDays.add(day);
-                          } else {
-                            _selectedDays.remove(day);
-                          }
-                        });
-                      },
-                    );
-                  }).toList(),
+                  children:
+                      _weekdays.map((day) {
+                        return FilterChip(
+                          label: Text(day),
+                          selected: _selectedDays.contains(day),
+                          onSelected: (bool selected) {
+                            setState(() {
+                              if (selected) {
+                                _selectedDays.add(day);
+                              } else {
+                                _selectedDays.remove(day);
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
                 ),
                 const SizedBox(height: 20),
                 const Text("Gender"),
