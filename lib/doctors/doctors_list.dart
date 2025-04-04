@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -353,32 +355,35 @@ class _DoctorsListState extends State<DoctorsList> {
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                      Icon(
-                                        Icons.attach_money,
-                                        size: 16,
-                                        color: Colors.blue,
-                                      ),
-                                      Text(data['consultationFee'] != null
-                                          ? 'Consultation Fee:'
-                                          : 'No Fees Specified'),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        data['consultationFee'] != null
-                                          ? 'BDT ${data['consultationFee']}'
-                                          : 'No Fees Specified',
+                                        Icon(
+                                          Icons.attach_money,
+                                          size: 16,
+                                          color: Colors.blue,
+                                        ),
+                                        Text(
+                                          data['consultationFee'] != null
+                                              ? 'Consultation Fee:'
+                                              : 'No Fees Specified',
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          data['consultationFee'] != null
+                                              ? 'BDT ${data['consultationFee']}'
+                                              : 'No Fees Specified',
                                           style: TextStyle(color: Colors.green),
-                                      ),
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 16),
                                     if (data['appointmentLink'] != null &&
                                         data['appointmentLink'].isNotEmpty)
                                       ElevatedButton(
-                                        onPressed: () {
+                                        onPressed: () async {
                                           // Show confirmation dialog
-                                          showDialog(
-                                            context:
-                                                context, // Make sure you have access to BuildContext
+                                          final confirmed = await showDialog<
+                                            bool
+                                          >(
+                                            context: context,
                                             builder:
                                                 (context) => AlertDialog(
                                                   title: const Text(
@@ -392,20 +397,18 @@ class _DoctorsListState extends State<DoctorsList> {
                                                       onPressed:
                                                           () => Navigator.pop(
                                                             context,
-                                                          ), // Cancel
+                                                            false,
+                                                          ),
                                                       child: const Text(
                                                         "Cancel",
                                                       ),
                                                     ),
                                                     TextButton(
-                                                      onPressed: () {
-                                                        Navigator.pop(
-                                                          context,
-                                                        ); // Close dialog
-                                                        _launchAppointmentLink(
-                                                          data['appointmentLink'],
-                                                        ); // Proceed
-                                                      },
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
                                                       child: const Text(
                                                         "Confirm",
                                                       ),
@@ -413,6 +416,10 @@ class _DoctorsListState extends State<DoctorsList> {
                                                   ],
                                                 ),
                                           );
+
+                                          if (confirmed == true) {
+                                            await _bookAppointment(data);
+                                          }
                                         },
                                         child: const Text('Book Appointment'),
                                         style: ElevatedButton.styleFrom(
@@ -444,5 +451,220 @@ class _DoctorsListState extends State<DoctorsList> {
         ),
       ),
     );
+  }
+
+  Future<void> _bookAppointment(Map<String, dynamic> doctorData) async {
+    try {
+      String docId = '';
+      final snapshot =
+          await FirebaseFirestore.instance.collection('doctors').get();
+      for (var doc in snapshot.docs) {
+        docId = doc.id; // ✅ correct assignment
+      }
+      final doctorDoc =
+          await FirebaseFirestore.instance
+              .collection('doctors')
+              .doc(docId)
+              .get();
+
+      final existingAppointments =
+          (doctorDoc.data()?['appointments'] as List<dynamic>? ?? [])
+              .map((a) => (a['appointmentDate'] as Timestamp).toDate())
+              .toList();
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please sign in to book an appointment'),
+          ),
+        );
+        return;
+      }
+
+      final timeRange = doctorData['availableTime'] as String;
+      final timeParts = timeRange.split(' - ');
+      if (timeParts.length != 2) throw Exception('Invalid time format');
+
+      final startTime = _parseTimeString(timeParts[0]);
+      final endTime = _parseTimeString(timeParts[1]);
+
+      final now = DateTime.now();
+      final initialMinute = now.minute ~/ 30 * 30;
+      final initialDateTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        now.hour,
+        initialMinute,
+      );
+
+      TimeOfDay? pickedTime = TimeOfDay.fromDateTime(initialDateTime);
+
+      final selectedTime = await showDialog<TimeOfDay>(
+        context: context,
+        builder: (context) {
+          TimeOfDay? pickedTime = TimeOfDay.fromDateTime(
+            initialDateTime,
+          ); // Populate this with doctor's existing appointments
+
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text('Select Appointment Time'),
+                content: SizedBox(
+                  height: 250,
+                  child: Column(
+                    children: [
+                      const Text('Appointments must be 15 minutes apart'),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: CupertinoDatePicker(
+                          mode: CupertinoDatePickerMode.time,
+                          minuteInterval: 15,
+                          initialDateTime: initialDateTime,
+                          onDateTimeChanged: (DateTime date) {
+                            setState(() {
+                              pickedTime = TimeOfDay.fromDateTime(date);
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      if (pickedTime == null) return;
+
+                      final selectedTime = DateTime(
+                        initialDateTime.year,
+                        initialDateTime.month,
+                        initialDateTime.day,
+                        pickedTime!.hour,
+                        pickedTime!.minute,
+                      );
+
+                      // Check 1: Within doctor's availability
+                      final selectedMinutes =
+                          pickedTime!.hour * 60 + pickedTime!.minute;
+                      final startMinutes =
+                          startTime.hour * 60 + startTime.minute;
+                      final endMinutes = endTime.hour * 60 + endTime.minute;
+
+                      if (selectedMinutes < startMinutes ||
+                          selectedMinutes > endMinutes) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Selected time is not within doctor\'s availability hours',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Check 2: At least 15 minutes after any existing appointment
+                      for (final appointment in existingAppointments) {
+                        final timeDiff =
+                            selectedTime.difference(appointment).inMinutes;
+                        if (timeDiff.abs() < 15) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please select a time at least 15 minutes after ${DateFormat('h:mm a').format(appointment)}',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
+                      }
+
+                      Navigator.pop(context, pickedTime);
+                    },
+                    child: const Text('Confirm'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+      if (selectedTime == null) return;
+
+      DateTime appointmentDateTime = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        selectedTime.hour,
+        selectedTime.minute,
+      );
+
+      if (appointmentDateTime.isBefore(now)) {
+        appointmentDateTime = appointmentDateTime.add(const Duration(days: 1));
+      }
+
+      final userDoc =
+          await FirebaseFirestore.instance
+              .collection('user_info')
+              .doc(user.uid)
+              .get();
+
+      final appointmentData = {
+        'uid': user.uid,
+        'patientName': userDoc.data()?['name'] ?? 'Unknown',
+        'paidAmount': doctorData['consultationFee'],
+        'paid': true,
+        'appointmentDate': Timestamp.fromDate(appointmentDateTime),
+        'status': 'pending',
+        'duration': 15,
+        'createdAt': Timestamp.now(),
+      };
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      // If you're using docId from above:
+      final doctorRef = FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(docId); // ✅ use dynamically found doc ID
+
+      batch.update(doctorRef, {
+        'appointments': FieldValue.arrayUnion([appointmentData]),
+        'appointmentStatus': 'pending',
+        'updatedAt': Timestamp.now(),
+      });
+
+      final doctorsSnapshot =
+          await FirebaseFirestore.instance.collection('doctors').get();
+
+      for (var doc in doctorsSnapshot.docs) {
+        print('Doctor ID: ${doc.id}');
+        print('Doctor Data: ${doc.data()}');
+      }
+
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment booked successfully!')),
+      );
+
+      if ((doctorData['appointmentLink'] ?? '').isNotEmpty) {
+        _launchAppointmentLink(doctorData['appointmentLink']);
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Booking failed: ${e.toString()}')),
+      );
+    }
+  }
+
+  TimeOfDay _parseTimeString(String timeStr) {
+    final format = DateFormat('h:mm a');
+    final dateTime = format.parse(timeStr);
+    return TimeOfDay.fromDateTime(dateTime);
   }
 }
