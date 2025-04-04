@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -27,9 +29,9 @@ class _DoctorsListState extends State<DoctorsList> {
     if (await canLaunchUrl(Uri.parse(url))) {
       await launchUrl(Uri.parse(url));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not launch $url')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not launch $url')));
     }
   }
 
@@ -39,17 +41,17 @@ class _DoctorsListState extends State<DoctorsList> {
 
   void _groupDoctorsBySpecialty(List<DocumentSnapshot> doctors) {
     final grouped = <String, List<DocumentSnapshot>>{};
-    
+
     for (var doctor in doctors) {
       final data = doctor.data() as Map<String, dynamic>;
       final specialty = data['specialty'] ?? 'Other';
-      
+
       if (!grouped.containsKey(specialty)) {
         grouped[specialty] = [];
       }
       grouped[specialty]!.add(doctor);
     }
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() {
@@ -60,29 +62,33 @@ class _DoctorsListState extends State<DoctorsList> {
     });
   }
 
-  Map<String, List<DocumentSnapshot>> _filterDoctors(Map<String, List<DocumentSnapshot>> doctors) {
+  Map<String, List<DocumentSnapshot>> _filterDoctors(
+    Map<String, List<DocumentSnapshot>> doctors,
+  ) {
     if (_searchQuery.isEmpty) return doctors;
 
     final filtered = <String, List<DocumentSnapshot>>{};
-    
+
     for (var entry in doctors.entries) {
       final specialty = entry.key;
-      final filteredDoctors = entry.value.where((doctor) {
-        final data = doctor.data() as Map<String, dynamic>;
-        final name = data['name']?.toString().toLowerCase() ?? '';
-        final hospital = data['hospital']?.toString().toLowerCase() ?? '';
-        final doctorSpecialty = data['specialty']?.toString().toLowerCase() ?? '';
-        
-        return name.contains(_searchQuery) || 
-               hospital.contains(_searchQuery) || 
-               doctorSpecialty.contains(_searchQuery);
-      }).toList();
-      
+      final filteredDoctors =
+          entry.value.where((doctor) {
+            final data = doctor.data() as Map<String, dynamic>;
+            final name = data['name']?.toString().toLowerCase() ?? '';
+            final hospital = data['hospital']?.toString().toLowerCase() ?? '';
+            final doctorSpecialty =
+                data['specialty']?.toString().toLowerCase() ?? '';
+
+            return name.contains(_searchQuery) ||
+                hospital.contains(_searchQuery) ||
+                doctorSpecialty.contains(_searchQuery);
+          }).toList();
+
       if (filteredDoctors.isNotEmpty) {
         filtered[specialty] = filteredDoctors;
       }
     }
-    
+
     return filtered;
   }
 
@@ -96,22 +102,25 @@ class _DoctorsListState extends State<DoctorsList> {
           controller: _searchController,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
+            fillColor: Theme.of(
+              context,
+            ).colorScheme.surfaceContainerHighest.withOpacity(0.4),
             hintText: 'Search by name, specialty or hospital...',
             prefixIcon: Icon(Icons.search, color: Theme.of(context).hintColor),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                        _filteredDoctors = _groupedDoctors;
-                      });
-                      FocusScope.of(context).unfocus();
-                    },
-                  )
-                : null,
+            suffixIcon:
+                _searchQuery.isNotEmpty
+                    ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {
+                          _searchQuery = '';
+                          _filteredDoctors = _groupedDoctors;
+                        });
+                        FocusScope.of(context).unfocus();
+                      },
+                    )
+                    : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
@@ -140,7 +149,7 @@ class _DoctorsListState extends State<DoctorsList> {
           gradient: LinearGradient(
             colors: [
               const Color.fromARGB(255, 225, 231, 243),
-              const Color.fromARGB(255, 212, 231, 240)
+              const Color.fromARGB(255, 212, 231, 240),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -165,13 +174,19 @@ class _DoctorsListState extends State<DoctorsList> {
                     return const Center(child: Text('No doctors found'));
                   }
 
-                  if (_groupedDoctors.isEmpty || 
-                      snapshot.data!.docs.length != _groupedDoctors.values.fold(0, (sum, list) => sum + list.length)) {
+                  if (_groupedDoctors.isEmpty ||
+                      snapshot.data!.docs.length !=
+                          _groupedDoctors.values.fold(
+                            0,
+                            (sum, list) => sum + list.length,
+                          )) {
                     _groupDoctorsBySpecialty(snapshot.data!.docs);
                   }
 
                   if (_filteredDoctors.isEmpty && _searchQuery.isNotEmpty) {
-                    return const Center(child: Text('No matching doctors found'));
+                    return const Center(
+                      child: Text('No matching doctors found'),
+                    );
                   }
 
                   return ListView.builder(
@@ -185,7 +200,10 @@ class _DoctorsListState extends State<DoctorsList> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0,
+                              vertical: 8.0,
+                            ),
                             child: Text(
                               specialty,
                               style: const TextStyle(
@@ -197,10 +215,13 @@ class _DoctorsListState extends State<DoctorsList> {
                           ),
                           ...doctors.map((doctor) {
                             var data = doctor.data() as Map<String, dynamic>;
-                            
+
                             return Card(
                               elevation: 4,
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -210,19 +231,29 @@ class _DoctorsListState extends State<DoctorsList> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         CircleAvatar(
                                           radius: 40,
                                           backgroundColor: Colors.grey[200],
-                                          backgroundImage: data['profileImage'] != null && data['profileImage'].isNotEmpty
-                                              ? NetworkImage(data['profileImage'])
-                                              : const AssetImage('lib/assets/order_medicine.jpg') as ImageProvider,
+                                          backgroundImage:
+                                              data['profileImage'] != null &&
+                                                      data['profileImage']
+                                                          .isNotEmpty
+                                                  ? FileImage(
+                                                    File(data['profileImage']),
+                                                  ) // Use FileImage for local files
+                                                  : const AssetImage(
+                                                        'lib/assets/doctor.png',
+                                                      )
+                                                      as ImageProvider,
                                         ),
                                         const SizedBox(width: 16),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 data['name'] ?? 'No Name',
@@ -233,7 +264,8 @@ class _DoctorsListState extends State<DoctorsList> {
                                               ),
                                               const SizedBox(height: 4),
                                               Text(
-                                                data['hospital'] ?? 'No Hospital',
+                                                data['hospital'] ??
+                                                    'No Hospital',
                                                 style: TextStyle(
                                                   fontSize: 14,
                                                   color: Colors.grey[600],
@@ -243,15 +275,19 @@ class _DoctorsListState extends State<DoctorsList> {
                                           ),
                                         ),
                                         Chip(
-                                          backgroundColor: data['isAvailable'] == true 
-                                              ? Colors.green[100] 
-                                              : Colors.red[100],
+                                          backgroundColor:
+                                              data['isAvailable'] == true
+                                                  ? Colors.green[100]
+                                                  : Colors.red[100],
                                           label: Text(
-                                            data['isAvailable'] == true ? 'Available' : 'Unavailable',
+                                            data['isAvailable'] == true
+                                                ? 'Available'
+                                                : 'Unavailable',
                                             style: TextStyle(
-                                              color: data['isAvailable'] == true 
-                                                  ? Colors.green 
-                                                  : Colors.red,
+                                              color:
+                                                  data['isAvailable'] == true
+                                                      ? Colors.green
+                                                      : Colors.red,
                                             ),
                                           ),
                                         ),
@@ -262,7 +298,11 @@ class _DoctorsListState extends State<DoctorsList> {
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        Icon(Icons.phone, size: 16, color: Colors.blue),
+                                        Icon(
+                                          Icons.phone,
+                                          size: 16,
+                                          color: Colors.blue,
+                                        ),
                                         const SizedBox(width: 8),
                                         Text(data['phone'] ?? 'No Phone'),
                                       ],
@@ -270,7 +310,11 @@ class _DoctorsListState extends State<DoctorsList> {
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        Icon(Icons.email, size: 16, color: Colors.blue),
+                                        Icon(
+                                          Icons.email,
+                                          size: 16,
+                                          color: Colors.blue,
+                                        ),
                                         const SizedBox(width: 8),
                                         Text(data['email'] ?? 'No Email'),
                                       ],
@@ -278,28 +322,48 @@ class _DoctorsListState extends State<DoctorsList> {
                                     const SizedBox(height: 8),
                                     Row(
                                       children: [
-                                        Icon(Icons.access_time, size: 16, color: Colors.blue),
+                                        Icon(
+                                          Icons.access_time,
+                                          size: 16,
+                                          color: Colors.blue,
+                                        ),
                                         const SizedBox(width: 8),
-                                        Text(data['availableTime'] ?? 'No Time Specified'),
+                                        Text(
+                                          data['availableTime'] ??
+                                              'No Time Specified',
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 8),
                                     Wrap(
                                       spacing: 8,
-                                      children: (data['availableDays'] as List<dynamic>? ?? [])
-                                          .map((day) => Chip(
-                                                label: Text(day.toString()),
-                                                backgroundColor: Colors.blue[50],
-                                              ))
-                                          .toList(),
+                                      children:
+                                          (data['availableDays']
+                                                      as List<dynamic>? ??
+                                                  [])
+                                              .map(
+                                                (day) => Chip(
+                                                  label: Text(day.toString()),
+                                                  backgroundColor:
+                                                      Colors.blue[50],
+                                                ),
+                                              )
+                                              .toList(),
                                     ),
                                     const SizedBox(height: 16),
-                                    if (data['appointmentLink'] != null && data['appointmentLink'].isNotEmpty)
+                                    if (data['appointmentLink'] != null &&
+                                        data['appointmentLink'].isNotEmpty)
                                       ElevatedButton(
-                                        onPressed: () => _launchAppointmentLink(data['appointmentLink']),
+                                        onPressed:
+                                            () => _launchAppointmentLink(
+                                              data['appointmentLink'],
+                                            ),
                                         child: const Text('Book Appointment'),
                                         style: ElevatedButton.styleFrom(
-                                          minimumSize: const Size(double.infinity, 40),
+                                          minimumSize: const Size(
+                                            double.infinity,
+                                            40,
+                                          ),
                                         ),
                                       ),
                                     const SizedBox(height: 8),
