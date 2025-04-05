@@ -55,9 +55,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Color _getBorderColor(String status) {
     switch (status) {
       case 'pending':
-        return Colors.orange;
+        return const Color.fromARGB(255, 163, 62, 4);
       case 'confirmed':
-        return Colors.green;
+        return const Color.fromARGB(255, 50, 131, 53);
       default:
         return Colors.grey;
     }
@@ -131,80 +131,87 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   }
 
   Future<void> _updateStatus(
-  String doctorId,
-  Map<String, dynamic> appointment,
-  String newStatus,
-) async {
-  try {
-    // 1. Get the current doctor document
-    final doctorDoc = await _firestore.collection('doctors').doc(doctorId).get();
-    if (!doctorDoc.exists) {
-      throw Exception('Doctor document not found');
-    }
-
-    // 2. Find the exact appointment in the array
-    final appointments = doctorDoc.data()?['appointments'] as List<dynamic>? ?? [];
-    int? appointmentIndex;
-    Map<String, dynamic>? existingAppointment;
-    
-    for (int i = 0; i < appointments.length; i++) {
-      final appt = appointments[i] as Map<String, dynamic>;
-      if (appt['uid'] == appointment['uid'] &&
-          (appt['appointmentDate'] as Timestamp).toDate() == 
-          (appointment['appointmentDate'] as Timestamp).toDate() &&
-          appt['status'] == 'pending') {  // Only update pending appointments
-        appointmentIndex = i;
-        existingAppointment = appt;
-        break;
+    String doctorId,
+    Map<String, dynamic> appointment,
+    String newStatus,
+  ) async {
+    try {
+      // 1. Get the current doctor document
+      final doctorDoc =
+          await _firestore.collection('doctors').doc(doctorId).get();
+      if (!doctorDoc.exists) {
+        throw Exception('Doctor document not found');
       }
+
+      // 2. Find the exact appointment in the array
+      final appointments =
+          doctorDoc.data()?['appointments'] as List<dynamic>? ?? [];
+      int? appointmentIndex;
+      Map<String, dynamic>? existingAppointment;
+
+      for (int i = 0; i < appointments.length; i++) {
+        final appt = appointments[i] as Map<String, dynamic>;
+        if (appt['uid'] == appointment['uid'] &&
+            (appt['appointmentDate'] as Timestamp).toDate() ==
+                (appointment['appointmentDate'] as Timestamp).toDate() &&
+            appt['status'] == 'pending') {
+          // Only update pending appointments
+          appointmentIndex = i;
+          existingAppointment = appt;
+          break;
+        }
+      }
+
+      if (existingAppointment == null) {
+        throw Exception('Pending appointment not found in doctor record');
+      }
+
+      // 3. Create updated appointment data
+      final updatedAppointment = Map<String, dynamic>.from(existingAppointment);
+      updatedAppointment['status'] = newStatus;
+
+      // 4. Get the entire appointments array
+      List<dynamic> updatedAppointments = List.from(appointments);
+
+      // 5. Replace the specific appointment
+      updatedAppointments[appointmentIndex!] = updatedAppointment;
+
+      // 6. Update the entire array at once
+      await _firestore.collection('doctors').doc(doctorId).update({
+        'appointments': updatedAppointments,
+        'updatedAt': Timestamp.now(),
+      });
+
+      // 7. Update in user's appointments
+      final userAppointments =
+          await _firestore
+              .collection('user_info')
+              .doc(appointment['uid'])
+              .collection('appointments')
+              .where(
+                'appointmentDate',
+                isEqualTo: appointment['appointmentDate'],
+              )
+              .where('doctorId', isEqualTo: doctorId)
+              .where('status', isEqualTo: 'pending')
+              .get();
+
+      final batch = _firestore.batch();
+      for (var doc in userAppointments.docs) {
+        batch.update(doc.reference, {'status': newStatus});
+      }
+      await batch.commit();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Appointment status updated to $newStatus')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update: ${e.toString()}')),
+      );
+      debugPrint('Update error: $e');
     }
-
-    if (existingAppointment == null) {
-      throw Exception('Pending appointment not found in doctor record');
-    }
-
-    // 3. Create updated appointment data
-    final updatedAppointment = Map<String, dynamic>.from(existingAppointment);
-    updatedAppointment['status'] = newStatus;
-
-    // 4. Get the entire appointments array
-    List<dynamic> updatedAppointments = List.from(appointments);
-    
-    // 5. Replace the specific appointment
-    updatedAppointments[appointmentIndex!] = updatedAppointment;
-
-    // 6. Update the entire array at once
-    await _firestore.collection('doctors').doc(doctorId).update({
-      'appointments': updatedAppointments,
-      'updatedAt': Timestamp.now(),
-    });
-
-    // 7. Update in user's appointments
-    final userAppointments = await _firestore
-        .collection('user_info')
-        .doc(appointment['uid'])
-        .collection('appointments')
-        .where('appointmentDate', isEqualTo: appointment['appointmentDate'])
-        .where('doctorId', isEqualTo: doctorId)
-        .where('status', isEqualTo: 'pending')
-        .get();
-
-    final batch = _firestore.batch();
-    for (var doc in userAppointments.docs) {
-      batch.update(doc.reference, {'status': newStatus});
-    }
-    await batch.commit();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Appointment status updated to $newStatus')),
-    );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Failed to update: ${e.toString()}')),
-    );
-    debugPrint('Update error: $e');
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +244,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           final filteredAppointments =
               allAppointments.where((appt) {
                 if (_userRole == 'admin') {
-                  return appt['status'] == 'pending' || appt['status'] == 'confirmed';
+                  return appt['status'] == 'pending' ||
+                      appt['status'] == 'confirmed';
                 } else {
                   return appt['uid'] == _currentUserId;
                 }
@@ -439,7 +447,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                   icon: const Icon(Icons.check, size: 18),
                                   label: const Text('Confirm'),
                                   style: OutlinedButton.styleFrom(
-                                    foregroundColor: const Color.fromARGB(255, 23, 94, 25),
+                                    foregroundColor: const Color.fromARGB(
+                                      255,
+                                      23,
+                                      94,
+                                      25,
+                                    ),
                                     side: const BorderSide(color: Colors.green),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
@@ -456,31 +469,37 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                       ),
                                 ),
                               ),
-                            SizedBox(
-                              width: 120, // Fixed width for buttons
-                              child: OutlinedButton.icon(
-                                icon: const Icon(
-                                  Icons.delete_outline,
-                                  size: 18,
-                                ),
-                                label: const Text('Delete'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color.fromARGB(255, 138, 29, 21),
-                                  side: const BorderSide(color: Colors.red),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                            if (status == 'pending' || _userRole == 'admin' && status == 'confirmed')
+                              SizedBox(
+                                width: 120, // Fixed width for buttons
+                                child: OutlinedButton.icon(
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    size: 18,
                                   ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8,
-                                  ),
-                                ),
-                                onPressed:
-                                    () => _deleteAppointment(
-                                      doctorId,
-                                      appointment,
+                                  label: const Text('Delete'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: const Color.fromARGB(
+                                      255,
+                                      138,
+                                      29,
+                                      21,
                                     ),
+                                    side: const BorderSide(color: Colors.red),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                  ),
+                                  onPressed:
+                                      () => _deleteAppointment(
+                                        doctorId,
+                                        appointment,
+                                      ),
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ],
@@ -507,14 +526,20 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         const SizedBox(width: 8),
         Text(
           '$label: ',
-          style: TextStyle(fontSize: 14, color: const Color.fromARGB(255, 51, 50, 50)),
+          style: TextStyle(
+            fontSize: 14,
+            color: const Color.fromARGB(255, 51, 50, 50),
+          ),
         ),
         Text(
           value,
           style: TextStyle(
             fontSize: 14,
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
-            color: isBold ? const Color.fromARGB(255, 43, 42, 42) : const Color.fromARGB(255, 10, 9, 9),
+            color:
+                isBold
+                    ? const Color.fromARGB(255, 43, 42, 42)
+                    : const Color.fromARGB(255, 10, 9, 9),
           ),
         ),
       ],
