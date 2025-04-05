@@ -455,16 +455,16 @@ class _DoctorsListState extends State<DoctorsList> {
 
   Future<void> _bookAppointment(Map<String, dynamic> doctorData) async {
     try {
-      String docId = '';
-      final snapshot =
-          await FirebaseFirestore.instance.collection('doctors').get();
-      for (var doc in snapshot.docs) {
-        docId = doc.id; // ✅ correct assignment
-      }
+      // String docId = '';
+      // final snapshot =
+      //     await FirebaseFirestore.instance.collection('doctors').get();
+      // for (var doc in snapshot.docs) {
+      //   docId = doc.id; // ✅ correct assignment
+      // }
       final doctorDoc =
           await FirebaseFirestore.instance
               .collection('doctors')
-              .doc(docId)
+              .doc(doctorData['doctorId'])
               .get();
 
       final existingAppointments =
@@ -617,6 +617,8 @@ class _DoctorsListState extends State<DoctorsList> {
       final appointmentData = {
         'uid': user.uid,
         'patientName': userDoc.data()?['name'] ?? 'Unknown',
+        'doctorName': doctorData['name'],
+        'speciality': doctorData ['specialty'],
         'paidAmount': doctorData['consultationFee'],
         'paid': true,
         'appointmentDate': Timestamp.fromDate(appointmentDateTime),
@@ -625,28 +627,39 @@ class _DoctorsListState extends State<DoctorsList> {
         'createdAt': Timestamp.now(),
       };
 
-      final batch = FirebaseFirestore.instance.batch();
+         final batch = FirebaseFirestore.instance.batch();
 
-      // If you're using docId from above:
-      final doctorRef = FirebaseFirestore.instance
-          .collection('doctors')
-          .doc(docId); // ✅ use dynamically found doc ID
+    // 4. Update doctor's appointments
+    final doctorRef = FirebaseFirestore.instance
+        .collection('doctors')
+        .doc(doctorData['doctorId']);
+    
+    batch.update(doctorRef, {
+      'appointments': FieldValue.arrayUnion([appointmentData]),
+      'updatedAt': Timestamp.now(),
+    });
 
-      batch.update(doctorRef, {
-        'appointments': FieldValue.arrayUnion([appointmentData]),
-        'appointmentStatus': 'pending',
-        'updatedAt': Timestamp.now(),
-      });
+    // // 5. Create user appointment record
+    // final userAppointmentRef = FirebaseFirestore.instance
+    //     .collection('user_info')
+    //     .doc(user.uid)
+    //     .collection('appointments')
+    //     .doc(); // Auto-generated ID
+    
+    // batch.set(userAppointmentRef, {
+    //   ...appointmentData,
+    //   'doctorData': {
+    //     'name': doctorData['name'] ?? 'Unknown Doctor',
+    //     'specialty': doctorData['specialty'] ?? 'General',
+    //     'hospital': doctorData['hospital'] ?? '',
+    //     'phone': doctorData['phone'] ?? '',
+    //     'email': doctorData['email'] ?? '',
+    //     'appointmentLink': doctorData['appointmentLink'] ?? '',
+    //   },
+    // });
 
-      final doctorsSnapshot =
-          await FirebaseFirestore.instance.collection('doctors').get();
-
-      for (var doc in doctorsSnapshot.docs) {
-        print('Doctor ID: ${doc.id}');
-        print('Doctor Data: ${doc.data()}');
-      }
-
-      await batch.commit();
+    // 6. Commit the batch
+    await batch.commit();
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Appointment booked successfully!')),

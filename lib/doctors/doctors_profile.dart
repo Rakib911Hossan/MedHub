@@ -199,7 +199,7 @@ class _AddDoctorsProfileState extends State<AddDoctorsProfile> {
     }
 
     // If no existing profile, add new profile
-    await _firestore.collection('doctors').add({
+    await _firestore.collection('doctors').doc(userId).set({
       'name': _nameController.text,
       'specialty': _specialtyController.text,
       'phone': _phoneController.text,
