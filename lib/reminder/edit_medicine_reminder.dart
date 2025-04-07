@@ -69,9 +69,9 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
               now.year, now.month, now.day, _time.hour, _time.minute);
 
           await _firestore
-              .collection('users')
+              .collection('user_info')
               .doc(user.uid)
-              .collection('medicineReminders')
+              .collection('medicine_reminders')
               .doc(widget.documentId)
               .update({
             'name': _medicineName,
