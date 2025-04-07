@@ -30,19 +30,17 @@ class _MedicineReminderState extends State<MedicineReminder> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF5F9F5),
-              Colors.white,
-            ],
+            colors: [Color(0xFFF5F9F5), Colors.white],
           ),
         ),
         child: StreamBuilder<QuerySnapshot>(
-          stream: _firestore
-              .collection('users')
-              .doc(_auth.currentUser?.uid)
-              .collection('medicineReminders')
-              .orderBy('time')
-              .snapshots(),
+          stream:
+              _firestore
+                  .collection('users')
+                  .doc(_auth.currentUser?.uid)
+                  .collection('medicineReminders')
+                  .orderBy('time')
+                  .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
@@ -57,15 +55,19 @@ class _MedicineReminderState extends State<MedicineReminder> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.medical_services,
-                        size: 64, color: Color(0xFF6FD08E)),
+                    const Icon(
+                      Icons.medical_services,
+                      size: 64,
+                      color: Color(0xFF6FD08E),
+                    ),
                     const SizedBox(height: 16),
                     const Text(
                       'No medicines added yet',
                       style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
-                          fontWeight: FontWeight.w500),
+                        fontSize: 18,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     ElevatedButton(
@@ -76,7 +78,9 @@ class _MedicineReminderState extends State<MedicineReminder> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 24, vertical: 12),
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text(
                         'Add Your First Medicine',
@@ -94,7 +98,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
               itemBuilder: (context, index) {
                 final doc = snapshot.data!.docs[index];
                 final data = doc.data() as Map<String, dynamic>;
-                
+
                 return _buildMedicineCard(
                   context,
                   data['name'] ?? 'Unknown Medicine',
@@ -139,9 +143,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
       ),
       child: Card(
         elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -164,12 +166,20 @@ class _MedicineReminderState extends State<MedicineReminder> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.edit, color: Color(0xFF6FD08E)),
-                        onPressed: () => _navigateToEditMedicine(
-                            context, documentId, name, dosage, time, notes),
+                        onPressed:
+                            () => _navigateToEditMedicine(
+                              context,
+                              documentId,
+                              name,
+                              dosage,
+                              time,
+                              notes,
+                            ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.redAccent),
-                        onPressed: () => _deleteMedicine(documentId),
+                        onPressed:
+                            () => _showDeleteConfirmation(context, documentId),
                       ),
                     ],
                   ),
@@ -213,13 +223,98 @@ class _MedicineReminderState extends State<MedicineReminder> {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black87,
-            ),
+            style: const TextStyle(fontSize: 15, color: Colors.black87),
           ),
         ),
       ],
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, String documentId) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: Colors.white,
+          elevation: 6,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  size: 60,
+                  color: Color(0xFFFF6B6B),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Delete Reminder?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF333333),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Are you sure you want to permanently delete this medicine reminder?',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Color(0xFF666666)),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      label: const Text('Cancel'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade500,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        _deleteMedicine(documentId);
+                      },
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: Colors.white,
+                      ),
+                      label: const Text('Delete'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFFFF6B6B),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -231,7 +326,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
           .collection('medicineReminders')
           .doc(documentId)
           .delete();
-          
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Medicine deleted successfully'),
@@ -251,9 +346,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
   void _navigateToAddMedicine(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const AddMedicineReminder(),
-      ),
+      MaterialPageRoute(builder: (context) => const AddMedicineReminder()),
     );
   }
 
@@ -268,14 +361,15 @@ class _MedicineReminderState extends State<MedicineReminder> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => EditMedicineReminder(
-          documentId: documentId,
-          initialName: name,
-          initialDosage: dosage,
-          initialTime: time,
-          initialNotes: notes,
-          isEditing: true,
-        ),
+        builder:
+            (context) => EditMedicineReminder(
+              documentId: documentId,
+              initialName: name,
+              initialDosage: dosage,
+              initialTime: time,
+              initialNotes: notes,
+              isEditing: true,
+            ),
       ),
     );
   }
