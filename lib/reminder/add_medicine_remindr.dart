@@ -57,21 +57,27 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
           // Create a DateTime from the selected time (using today's date)
           final now = DateTime.now();
           final scheduledTime = DateTime(
-              now.year, now.month, now.day, _time.hour, _time.minute);
+            now.year,
+            now.month,
+            now.day,
+            _time.hour,
+            _time.minute,
+          );
 
           await _firestore
               .collection('users')
               .doc(user.uid)
               .collection('medicineReminders')
               .add({
-            'name': _medicineName,
-            'dosage': _dosage,
-            'time': scheduledTime,
-            'notes': _notes,
-            'createdAt': FieldValue.serverTimestamp(),
-          });
+                'name': _medicineName,
+                'dosage': _dosage,
+                'time': scheduledTime,
+                'notes': _notes,
+                'createdAt': FieldValue.serverTimestamp(),
+              });
 
-          Navigator.pop(context);
+          // Show aesthetic success popup
+          _showSuccessDialog(context);
         }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,12 +156,71 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
     );
   }
 
+  void _showSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // Prevent closing by tapping outside
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: const Color(0xFFEFFAF3),
+          title: const Icon(
+            Icons.check_circle,
+            color: Color(0xFF6FD08E),
+            size: 60,
+          ),
+          content: const Text(
+            'Medicine Reminder Saved Successfully!',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF2E7D32),
+            ),
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6FD08E),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                elevation: 0,
+              ),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Go back to previous screen
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildMedicineNameField() {
     return TextFormField(
       decoration: InputDecoration(
         labelText: 'Medicine Name',
         labelStyle: const TextStyle(color: Colors.grey),
-        prefixIcon: const Icon(Icons.medical_services, color: Color(0xFF6FD08E)),
+        prefixIcon: const Icon(
+          Icons.medical_services,
+          color: Color(0xFF6FD08E),
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.grey),
@@ -210,10 +275,7 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
       children: [
         const Text(
           'Reminder Time',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.grey, fontSize: 12),
         ),
         const SizedBox(height: 8),
         InkWell(
