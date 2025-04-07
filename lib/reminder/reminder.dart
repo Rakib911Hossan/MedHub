@@ -36,9 +36,9 @@ class _MedicineReminderState extends State<MedicineReminder> {
         child: StreamBuilder<QuerySnapshot>(
           stream:
               _firestore
-                  .collection('users')
+                  .collection('user_info')
                   .doc(_auth.currentUser?.uid)
-                  .collection('medicineReminders')
+                  .collection('medicine_reminders')
                   .orderBy('time')
                   .snapshots(),
           builder: (context, snapshot) {
@@ -321,9 +321,9 @@ class _MedicineReminderState extends State<MedicineReminder> {
   Future<void> _deleteMedicine(String documentId) async {
     try {
       await _firestore
-          .collection('users')
+          .collection('user_info')
           .doc(_auth.currentUser?.uid)
-          .collection('medicineReminders')
+          .collection('medicine_reminders')
           .doc(documentId)
           .delete();
 
