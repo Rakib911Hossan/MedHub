@@ -6,6 +6,7 @@ import 'package:new_project/doctors/appointments/appointments.dart';
 import 'package:new_project/doctors/doctors_list.dart';
 import 'package:new_project/doctors/doctors_profile.dart';
 import 'package:new_project/doctors/edit_doctors_profile.dart';
+import 'package:new_project/reminder/reminder.dart';
 import 'package:new_project/order/all_orders.dart';
 import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/medicine/medicines.dart';
@@ -348,14 +349,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       "We are here to help you connect with your doctor and get your medicines",
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         color: Theme.of(context).hintColor,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 25),
               Column(
                 children: [
                   _buildServiceCard(
@@ -373,7 +374,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 15),
                   _buildServiceCard(
                     context,
                     'lib/assets/doctor.jpg',
@@ -385,6 +386,24 @@ class _HomeScreenState extends State<HomeScreen> {
                         context,
                         MaterialPageRoute(
                           builder: (context) => const DoctorsList(),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  _buildServiceCard(
+                    context,
+                    'lib/assets/time.png', // Use a medicine/reminder related image
+                    'Medicine Reminder',
+                    'Never miss a dose',
+                    const Color.fromARGB(255, 106, 179, 129), // Fresh green (like pills/health)
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  const MedicineReminder(), // Your reminder screen
                         ),
                       );
                     },
