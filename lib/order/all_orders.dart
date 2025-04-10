@@ -690,11 +690,11 @@ Future<double> _calculatePeriodTotal(String collection, String period, String fi
       .where(collection == 'billings_daily' ? FieldPath.documentId : collection == 'billings_monthly' ? 'month' : 'year', 
              isGreaterThanOrEqualTo: period)
       .where(collection == 'billings_daily' ? FieldPath.documentId : collection == 'billings_monthly' ? 'month' : 'year', 
-             isLessThan: collection == 'billings_daily' ? '${period}~' : '${period}~')
+             isLessThan: collection == 'billings_daily' ? '$period~' : '$period~')
       .get();
 
   for (var doc in querySnapshot.docs) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = doc.data();
     total += (data[field] ?? 0).toDouble();
   }
 
