@@ -64,8 +64,7 @@ class _AddMedicineState extends State<AddMedicine> {
         category.isEmpty ||
         company.isEmpty ||
         description.isEmpty ||
-        genericGroup.isEmpty ||
-        uid == null) {
+        genericGroup.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('All fields are required!')));
