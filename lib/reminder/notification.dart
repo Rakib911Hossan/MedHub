@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
@@ -10,25 +12,31 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
-  Future<void> init() async {
+ Future<void> init() async {
+    // Initialize timezones (must be done before any scheduling)
+    tz.initializeTimeZones();
+    final dhaka = tz.getLocation('Asia/Dhaka');
+    tz.setLocalLocation(dhaka);
+
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
-
     await flutterLocalNotificationsPlugin.initialize(
-      initSettings,
+      const InitializationSettings(android: androidSettings),
       onDidReceiveNotificationResponse: (response) {
-        debugPrint('Notification tapped: ${response.payload}');
+        debugPrint('Notification tapped!');
       },
     );
 
+    // Create notification channel (critical for Android 8+)
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       'medicine_reminder_channel',
       'Medicine Reminders',
       description: 'Channel for medicine reminders',
       importance: Importance.max,
+      playSound: true,
+      sound: RawResourceAndroidNotificationSound('notification'),
+      enableVibration: true,
     );
 
     await flutterLocalNotificationsPlugin
@@ -36,56 +44,93 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
 
-    debugPrint('✅ Notification channel ready');
+    // Request permissions (Android 13+)
+    await _requestPermissions();
   }
 
-  Future<void> showInstantNotification() async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'medicine_reminder_channel',
-      'Medicine Reminders',
-      channelDescription: 'Instant notification for testing',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
+  Future<void> _requestPermissions() async {
+    final androidPlugin = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.requestPermission();
+  }
+
+  Future<void> scheduleNotificationFromFirestore(String userId, String reminderId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('user_info')
+        .doc(userId)
+        .collection('medicine_reminders')
+        .doc(reminderId)
+        .get();
+
+    if (!doc.exists) {
+      debugPrint('Reminder document not found');
+      return;
+    }
+
+    final data = doc.data()!;
+    final scheduledTime = tz.TZDateTime.from(
+      (data['time'] as Timestamp).toDate(),
+      tz.local,
     );
 
-    const NotificationDetails platformDetails = NotificationDetails(android: androidDetails);
+    debugPrint('Scheduling notification for $scheduledTime');
 
-    await flutterLocalNotificationsPlugin.show(
-      0,
-      '💊 Med Reminder',
-      'It\'s time to take your medicine!',
-      platformDetails,
-    );
-  }
-  Future<void> scheduleNotification({required int hour, required int minute}) async {
-  final tz.TZDateTime now = tz.TZDateTime.now(tz.local);
-  tz.TZDateTime scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-
-  // If the time has already passed today, schedule for tomorrow
-  if (scheduledDate.isBefore(now)) {
-    scheduledDate = scheduledDate.add(const Duration(days: 1));
-  }
-
-  await flutterLocalNotificationsPlugin.zonedSchedule(
-    1,
-    '💊 Scheduled Med Reminder',
-    'Time to take your scheduled medicine!',
-    scheduledDate,
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'medicine_reminder_channel',
-        'Medicine Reminders',
-        channelDescription: 'Scheduled medicine notification',
-        importance: Importance.max,
-        priority: Priority.high,
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      reminderId.hashCode, // Unique ID for each reminder
+      '💊 Medicine Reminder',
+      'Time to take your medicine!',
+      scheduledTime,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'medicine_reminder_channel',
+          'Medicine Reminders',
+          channelDescription: 'Scheduled medicine notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+          enableVibration: true,
+          colorized: true,
+          color: Colors.blue,
+        ),
       ),
-    ),
-    androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    uiLocalNotificationDateInterpretation:
-        UILocalNotificationDateInterpretation.absoluteTime,
-    matchDateTimeComponents: DateTimeComponents.time, // Repeat daily at the same time
-  );
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
+
+    debugPrint('✅ Notification scheduled successfully');
+  } catch (e, stack) {
+    debugPrint('❌ Error scheduling notification: $e');
+    debugPrint(stack.toString());
+  }
 }
 
+
+  Future<void> showInstantNotification() async {
+    try {
+      await flutterLocalNotificationsPlugin.show(
+        0,
+        'Test Notification',
+        'This is an immediate test notification',
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'medicine_reminder_channel',
+            'Medicine Reminders',
+            importance: Importance.max,
+            priority: Priority.high,
+            playSound: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error showing notification: $e');
+    }
+  }
+}
+
+extension on AndroidFlutterLocalNotificationsPlugin? {
+  requestPermission() {}
 }
