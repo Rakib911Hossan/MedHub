@@ -204,21 +204,6 @@ class HomePage extends StatelessWidget {
                 },
                 child: const Text('Register'),
               ),
-              const SizedBox(height: 15),
-              ElevatedButton(
-                onPressed: () async {
-                  await NotificationService().scheduleNotification(
-                    hour: 18,
-                    minute: 00,
-                  ); // 8:30 PM
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('⏰ Notification scheduled at 8:30 PM'),
-                    ),
-                  );
-                },
-                child: const Text('Schedule 8:30 PM Reminder'),
-              ),
             ],
           ),
         ),
