@@ -3,10 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:new_project/doctors/edit_doctors_profile.dart';
 
 class AddDoctorsProfile extends StatefulWidget {
-  const AddDoctorsProfile({Key? key}) : super(key: key);
+  const AddDoctorsProfile({super.key});
 
   @override
   _AddDoctorsProfileState createState() => _AddDoctorsProfileState();

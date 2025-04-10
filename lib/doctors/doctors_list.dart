@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class DoctorsList extends StatefulWidget {
-  const DoctorsList({Key? key}) : super(key: key);
+  const DoctorsList({super.key});
 
   @override
   _DoctorsListState createState() => _DoctorsListState();
@@ -421,10 +421,10 @@ class _DoctorsListState extends State<DoctorsList> {
                                             await _bookAppointment(data);
                                           }
                                         },
-                                        child: const Text('Book Appointment'),
                                         style: ElevatedButton.styleFrom(
                                           minimumSize: const Size(130, 45),
                                         ),
+                                        child: const Text('Book Appointment'),
                                       ),
                                     const SizedBox(height: 8),
                                     Text(
@@ -439,7 +439,7 @@ class _DoctorsListState extends State<DoctorsList> {
                                 ),
                               ),
                             );
-                          }).toList(),
+                          }),
                         ],
                       );
                     },

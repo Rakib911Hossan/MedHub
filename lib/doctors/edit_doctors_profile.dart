@@ -8,10 +8,10 @@ class EditDoctorProfile extends StatefulWidget {
   final Map<String, dynamic> existingData;
 
   const EditDoctorProfile({
-    Key? key,
+    super.key,
     required this.doctorId,
     required this.existingData,
-  }) : super(key: key);
+  });
 
   @override
   _EditDoctorProfileState createState() => _EditDoctorProfileState();
