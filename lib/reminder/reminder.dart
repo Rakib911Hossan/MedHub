@@ -6,7 +6,7 @@ import 'package:new_project/reminder/add_medicine_remindr.dart';
 import 'package:new_project/reminder/edit_medicine_reminder.dart';
 
 class MedicineReminder extends StatefulWidget {
-  const MedicineReminder({Key? key}) : super(key: key);
+  const MedicineReminder({super.key});
 
   @override
   _MedicineReminderState createState() => _MedicineReminderState();

@@ -11,14 +11,14 @@ class EditMedicineReminder extends StatefulWidget {
   final bool isEditing;
 
   const EditMedicineReminder({
-    Key? key,
+    super.key,
     required this.documentId,
     required this.initialName,
     required this.initialDosage,
     required this.initialTime,
     required this.initialNotes,
     this.isEditing = false,
-  }) : super(key: key);
+  });
 
   @override
   _EditMedicineReminderState createState() => _EditMedicineReminderState();

@@ -34,6 +34,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _fetchUserData();
   }
 
+
+
   Future<void> _fetchUserData() async {
     if (user != null) {
       try {

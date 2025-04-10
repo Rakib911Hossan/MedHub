@@ -3,10 +3,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:intl/intl.dart';
 
 class AddMedicineReminder extends StatefulWidget {
-  const AddMedicineReminder({Key? key}) : super(key: key);
+  const AddMedicineReminder({super.key});
 
   @override
   _AddMedicineScreenState createState() => _AddMedicineScreenState();
@@ -35,8 +34,7 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
               onPrimary: Colors.white, // Header text color
               surface: Colors.white, // Background color
               onSurface: Colors.black, // Text color
-            ),
-            dialogBackgroundColor: Colors.white, // Background color
+            ), dialogTheme: DialogThemeData(backgroundColor: Colors.white), // Background color
           ),
           child: child!,
         );
