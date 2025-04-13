@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/reminder/notification.dart';
 
 class EditMedicineReminder extends StatefulWidget {
   final String documentId;
@@ -39,10 +40,43 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
     super.initState();
     _medicineName = widget.initialName;
     _dosage = widget.initialDosage;
-    _time = widget.initialTime != null
-        ? TimeOfDay.fromDateTime(widget.initialTime!)
-        : TimeOfDay.now();
+    _time =
+        widget.initialTime != null
+            ? TimeOfDay.fromDateTime(widget.initialTime!)
+            : TimeOfDay.now();
     _notes = widget.initialNotes;
+    _fetchMedicineReminders();
+  }
+
+  Future<void> _fetchMedicineReminders() async {
+    await NotificationService().init();
+
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+
+    // Fetch the user's medicine reminders from Firestore
+    final remindersSnapshot =
+        await FirebaseFirestore.instance
+            .collection('user_info')
+            .doc(userId)
+            .collection('medicine_reminders')
+            .get();
+
+    if (remindersSnapshot.docs.isEmpty) {
+      debugPrint('No reminders found for the user');
+      return;
+    }
+
+    // Fetch the reminder IDs
+    List<String> reminderIds =
+        remindersSnapshot.docs.map((doc) => doc.id).toList();
+
+    // Schedule notifications for all reminders
+    for (String reminderId in reminderIds) {
+      await NotificationService().scheduleNotificationFromFirestore(
+        userId,
+        reminderId,
+      );
+    }
   }
 
   Future<void> _selectTime(BuildContext context) async {
@@ -66,7 +100,12 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
         if (user != null) {
           final now = DateTime.now();
           final updatedTime = DateTime(
-              now.year, now.month, now.day, _time.hour, _time.minute);
+            now.year,
+            now.month,
+            now.day,
+            _time.hour,
+            _time.minute,
+          );
 
           await _firestore
               .collection('user_info')
@@ -74,12 +113,12 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
               .collection('medicine_reminders')
               .doc(widget.documentId)
               .update({
-            'name': _medicineName,
-            'dosage': _dosage,
-            'time': updatedTime,
-            'notes': _notes,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
+                'name': _medicineName,
+                'dosage': _dosage,
+                'time': updatedTime,
+                'notes': _notes,
+                'updatedAt': FieldValue.serverTimestamp(),
+              });
 
           Navigator.pop(context);
         }
@@ -133,7 +172,11 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: () async {
+                    // Call both functions inside the onPressed callback
+                    await _submitForm();
+                    await _fetchMedicineReminders();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6FD08E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -163,9 +206,11 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
     return TextFormField(
       initialValue: _medicineName,
       decoration: _inputDecoration('Medicine Name', Icons.medical_services),
-      validator: (value) => value == null || value.isEmpty
-          ? 'Please enter a medicine name'
-          : null,
+      validator:
+          (value) =>
+              value == null || value.isEmpty
+                  ? 'Please enter a medicine name'
+                  : null,
       onSaved: (value) => _medicineName = value!,
     );
   }
@@ -174,8 +219,9 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
     return TextFormField(
       initialValue: _dosage,
       decoration: _inputDecoration('Dosage (e.g., 1 tablet)', Icons.exposure),
-      validator: (value) =>
-          value == null || value.isEmpty ? 'Please enter the dosage' : null,
+      validator:
+          (value) =>
+              value == null || value.isEmpty ? 'Please enter the dosage' : null,
       onSaved: (value) => _dosage = value!,
     );
   }
@@ -186,10 +232,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
       children: [
         const Text(
           'Reminder Time',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 12,
-          ),
+          style: TextStyle(color: Colors.grey, fontSize: 12),
         ),
         const SizedBox(height: 8),
         InkWell(
@@ -228,7 +271,10 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
   Widget _buildNotesField() {
     return TextFormField(
       initialValue: _notes,
-      decoration: _inputDecoration('Additional Notes (optional)', Icons.note_add),
+      decoration: _inputDecoration(
+        'Additional Notes (optional)',
+        Icons.note_add,
+      ),
       maxLines: 3,
       onSaved: (value) => _notes = value ?? '',
     );
