@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/reminder/notification.dart';
 
 class AddMedicineReminder extends StatefulWidget {
   const AddMedicineReminder({super.key});
@@ -21,6 +22,13 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
   String _dosage = '';
   TimeOfDay _time = TimeOfDay.now();
   String _notes = '';
+  int _timeInHour = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMedicineReminders();
+  }
 
   Future<void> _selectTime(BuildContext context) async {
     final TimeOfDay? picked = await showTimePicker(
@@ -46,6 +54,38 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
       });
     }
   }
+
+  Future<void> _fetchMedicineReminders() async {
+    await NotificationService().init();
+
+    String userId = FirebaseAuth.instance.currentUser!.uid;
+
+    // Fetch the user's medicine reminders from Firestore
+    final remindersSnapshot =
+        await FirebaseFirestore.instance
+            .collection('user_info')
+            .doc(userId)
+            .collection('medicine_reminders')
+            .get();
+
+    if (remindersSnapshot.docs.isEmpty) {
+      debugPrint('No reminders found for the user');
+      return;
+    }
+
+    // Fetch the reminder IDs
+    List<String> reminderIds =
+        remindersSnapshot.docs.map((doc) => doc.id).toList();
+
+    // Schedule notifications for all reminders
+    for (String reminderId in reminderIds) {
+      await NotificationService().scheduleNotificationFromFirestore(
+        userId,
+        reminderId,
+      );
+    }
+  }
+  
 String generateRandomMedicineId() {
   const prefix = 'RMD';
   const length = 8; // Number of digits after 'RMD'
@@ -74,6 +114,7 @@ String generateRandomMedicineId() {
     .add({
   'name': _medicineName,
   'dosage': _dosage,
+  'timeInHour': _timeInHour,
   'time': scheduledTime,
   'notes': _notes,
   'createdAt': FieldValue.serverTimestamp(),
@@ -130,6 +171,8 @@ _showSuccessDialog(context);
               const SizedBox(height: 20),
               _buildDosageField(),
               const SizedBox(height: 20),
+              _buildTimeInHourField(),
+              const SizedBox(height: 20),
               _buildTimePickerField(context),
               const SizedBox(height: 20),
               _buildNotesField(),
@@ -137,7 +180,11 @@ _showSuccessDialog(context);
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: () async {
+                    // Call both functions inside the onPressed callback
+                    await _submitForm();
+                    // await _fetchMedicineReminders();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6FD08E),
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -228,6 +275,33 @@ void _showSuccessDialog(BuildContext context) {
         return null;
       },
       onSaved: (value) => _medicineName = value!,
+    );
+  }
+
+  Widget _buildTimeInHourField() {
+    return TextFormField(
+      decoration: InputDecoration(
+        labelText: 'Reminder after (hours)',
+        labelStyle: const TextStyle(color: Colors.grey),
+        prefixIcon: const Icon(Icons.access_time, color: Color(0xFF6FD08E)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.grey),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFF6FD08E), width: 2),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter the time in hour';
+        }
+        return null;
+      },
+      onSaved: (value) => _timeInHour = int.parse(value!),
     );
   }
 
