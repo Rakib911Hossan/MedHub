@@ -34,6 +34,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
   late String _dosage;
   late TimeOfDay _time;
   late String _notes;
+  late int _timeInHour;
 
   @override
   void initState() {
@@ -115,6 +116,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
               .update({
                 'name': _medicineName,
                 'dosage': _dosage,
+                'timeInHour': _timeInHour,
                 'time': updatedTime,
                 'notes': _notes,
                 'updatedAt': FieldValue.serverTimestamp(),
@@ -165,6 +167,8 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
               const SizedBox(height: 20),
               _buildDosageField(),
               const SizedBox(height: 20),
+               _buildTimeInHourField(),
+              const SizedBox(height: 20),
               _buildTimePickerField(context),
               const SizedBox(height: 20),
               _buildNotesField(),
@@ -175,7 +179,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
                   onPressed: () async {
                     // Call both functions inside the onPressed callback
                     await _submitForm();
-                    await _fetchMedicineReminders();
+                    // await _fetchMedicineReminders();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6FD08E),
@@ -223,6 +227,16 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
           (value) =>
               value == null || value.isEmpty ? 'Please enter the dosage' : null,
       onSaved: (value) => _dosage = value!,
+    );
+  }
+
+Widget _buildTimeInHourField() {
+    return TextFormField(
+      initialValue: _time.hour.toString(),
+      decoration: _inputDecoration('Reminder after (hours)', Icons.access_time),
+      validator: (value) =>
+          value == null || value.isEmpty ? 'Please enter the time' : null,
+      onSaved: (value) => _timeInHour = int.parse(value!),
     );
   }
 
