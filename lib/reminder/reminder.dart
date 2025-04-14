@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -121,123 +123,148 @@ class _MedicineReminderState extends State<MedicineReminder> {
     );
   }
 
-  Widget _buildMedicineCard(
-    BuildContext context,
-    String name,
-    String dosage,
-    int timeInHour,
-    DateTime? time,
-    String notes,
-    String documentId,
-  ) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
-          ),
-        ],
+ Widget _buildMedicineCard(
+  BuildContext context,
+  String name,
+  String dosage,
+  int timeInHour,
+  DateTime? time,
+  String notes,
+  String documentId,
+) {
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    decoration: BoxDecoration(
+      gradient: const LinearGradient(
+        colors: [Color(0xFFFDEBD0), Color(0xFFFADADD)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
       ),
-      child: Card(
-        elevation: 0,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2E5E4E),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Color(0xFF6FD08E)),
-                        onPressed:
-                            () => _navigateToEditMedicine(
-                              context,
-                              documentId,
-                              name,
-                              dosage,
-                              timeInHour,
-                              time,
-                              notes,
-                            ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.redAccent),
-                        onPressed:
-                            () => _showDeleteConfirmation(context, documentId),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              _buildDetailRow(
-                Icons.medical_services,
-                'Dosage: $dosage',
-                const Color(0xFF6FD08E),
-              ),
-              const SizedBox(height: 8),
-              _buildDetailRow(
-                Icons.access_alarm,
-                'Reminder Time: ${timeInHour.toString()} hours',
-                const Color(0xFF6FD08E),
-              ),
-              if (time != null) ...[
-                const SizedBox(height: 8),
-                _buildDetailRow(
-                  Icons.access_time,
-                  'Time: ${DateFormat.jm().format(time)}',
-                  const Color(0xFF6FD08E),
-                ),
-              ],
-              if (notes.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                _buildDetailRow(
-                  Icons.note,
-                  'Notes: $notes',
-                  const Color(0xFF6FD08E),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(IconData icon, String text, Color iconColor) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 18, color: iconColor),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            text,
-            style: const TextStyle(fontSize: 15, color: Colors.black87),
-          ),
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.pink.withOpacity(0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 10),
         ),
       ],
-    );
-  }
+    ),
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        child: Card(
+          color: const Color.fromARGB(255, 152, 235, 18).withOpacity(0.2),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title and Buttons Row
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '💊 $name',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF303030),
+                        ),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_rounded, color: Color(0xFF7F7EFF)),
+                          onPressed: () => _navigateToEditMedicine(
+                            context,
+                            documentId,
+                            name,
+                            dosage,
+                            timeInHour,
+                            time,
+                            notes,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_rounded, color: Color(0xFFFF6B6B)),
+                          onPressed: () => _showDeleteConfirmation(context, documentId),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildDetailRow(
+                  Icons.medical_services_outlined,
+                  'Dosage: $dosage',
+                  const Color(0xFFB388FF),
+                ),
+                const SizedBox(height: 10),
+                _buildDetailRow(
+                  Icons.access_alarm_rounded,
+                  'Interval: Every $timeInHour hrs',
+                  const Color(0xFF80CBC4),
+                ),
+
+                if (time != null) ...[
+                  const SizedBox(height: 10),
+                  _buildDetailRow(
+                    Icons.schedule_rounded,
+                    'Starts at: ${DateFormat.jm().format(time)}',
+                    const Color(0xFF81D4FA),
+                  ),
+                ],
+
+                if (notes.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  _buildDetailRow(
+                    Icons.sticky_note_2_outlined,
+                    'Notes: $notes',
+                    const Color(0xFFFFAB91),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+Widget _buildDetailRow(IconData icon, String text, Color iconColor) {
+  return Row(
+    children: [
+      Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: iconColor.withOpacity(0.15),
+        ),
+        padding: const EdgeInsets.all(8),
+        child: Icon(icon, size: 18, color: iconColor),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF444444),
+            fontWeight: FontWeight.w400,
+            letterSpacing: 0.1,
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
 
   void _showDeleteConfirmation(BuildContext context, String documentId) {
     showDialog(
