@@ -144,18 +144,11 @@ class _DoctorsListState extends State<DoctorsList> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Doctors List'),
-        backgroundColor: Colors.blueGrey,
+        backgroundColor: const Color.fromARGB(255, 16, 6, 189).withOpacity(.5),
       ),
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color.fromARGB(255, 225, 231, 243),
-              const Color.fromARGB(255, 212, 231, 240),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: const Color.fromARGB(255, 134, 125, 226).withOpacity(.1), // Replace gradient with a solid color
         ),
         child: Column(
           children: [
@@ -211,7 +204,7 @@ class _DoctorsListState extends State<DoctorsList> {
                               style: const TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.blueGrey,
+                                color: Color.fromARGB(255, 14, 16, 17),
                               ),
                             ),
                           ),
@@ -224,6 +217,7 @@ class _DoctorsListState extends State<DoctorsList> {
                                 horizontal: 16,
                                 vertical: 8,
                               ),
+                              color: const Color.fromARGB(255, 158, 223, 243).withOpacity(.7),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -270,7 +264,7 @@ class _DoctorsListState extends State<DoctorsList> {
                                                     'No Hospital',
                                                 style: TextStyle(
                                                   fontSize: 14,
-                                                  color: Colors.grey[600],
+                                                  color: const Color.fromARGB(255, 41, 40, 40),
                                                 ),
                                               ),
                                             ],
