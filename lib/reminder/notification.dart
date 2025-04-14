@@ -73,16 +73,17 @@ class NotificationService {
     }
 
     final data = doc.data()!;
-    final scheduledTime = tz.TZDateTime.from(
-      (data['time'] as Timestamp).toDate(),
-      tz.local,
-    );
-
     final medicineName = data['name'] ?? 'Medicine';
     final dosage = data['dosage'] ?? '';
-    
+    final int timeInHour = data['timeInHour'] ?? 0;
 
-    debugPrint('Scheduling notification for $scheduledTime');
+    // Initial time from Firestore
+    final DateTime initialTime = (data['time'] as Timestamp).toDate();
+
+    final scheduledTime = tz.TZDateTime.from(initialTime, tz.local);
+
+    debugPrint('📅 Scheduling starting from $scheduledTime');
+    debugPrint('🔁 Repeats every $timeInHour hour(s)');
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       reminderId.hashCode,
@@ -101,7 +102,7 @@ class NotificationService {
           icon: '@mipmap/pharmacy_17084816', // Replace with your custom icon
           styleInformation: BigTextStyleInformation(
             'It’s time to take your medicine 💊\nDosage: $dosage\n💧 Stay healthy and hydrated!',
-            contentTitle: '💙 Reminder: $medicineName',
+            contentTitle: '📅 Reminder: $medicineName',
             summaryText: 'Tap to view details',
           ),
           color: Colors.deepPurple,
