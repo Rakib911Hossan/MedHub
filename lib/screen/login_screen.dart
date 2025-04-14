@@ -61,6 +61,11 @@ class _LoginScreenState extends State<LoginScreen> {
     // Initialize notifications after successful login
     await NotificationService().init();
 
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+
     // Fetch the user's medicine reminders from Firestore
     String userId = _auth.currentUser!.uid;
 
@@ -89,10 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
       const SnackBar(content: Text("Login Successful")),
     );
     
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
+    
   } on FirebaseAuthException catch (e) {
     setState(() {
       if (e.code == 'user-not-found') {
