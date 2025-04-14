@@ -7,7 +7,7 @@ class EditMedicineReminder extends StatefulWidget {
   final String documentId;
   final String initialName;
   final String initialDosage;
-  final int initialTimeInHour;
+  final num initialTimeInHour;
   final DateTime? initialTime;
   final String initialNotes;
   final bool isEditing;
@@ -34,7 +34,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
 
   late String _medicineName;
   late String _dosage;
-  late int _timeInHour;
+  late num _timeInHour;
   late TimeOfDay _time;
   late String _notes;
 
@@ -114,7 +114,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
             _time.hour,
             _time.minute,
           );
-
+          debugPrint(_timeInHour.toString());
           await _firestore
               .collection('user_info')
               .doc(user.uid)

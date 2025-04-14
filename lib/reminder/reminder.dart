@@ -103,7 +103,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
                   context,
                   data['name'] ?? 'Unknown Medicine',
                   data['dosage'] ?? '',
-                  data['time_in_hour'] ?? 0,
+                  data['timeInHour'] ?? 0,
                   data['time']?.toDate(),
                   data['notes'] ?? '',
                   doc.id,
