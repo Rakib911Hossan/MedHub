@@ -73,7 +73,6 @@ class NotificationService {
     }
 
     final data = doc.data()!;
-    final timeInHour = data['timeInHour'] ?? 0;
     final scheduledTime = tz.TZDateTime.from(
       (data['time'] as Timestamp).toDate(),
       tz.local,
