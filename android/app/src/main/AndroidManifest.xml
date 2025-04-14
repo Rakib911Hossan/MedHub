@@ -6,9 +6,9 @@
 
     <application
         android:requestLegacyExternalStorage="true"
-        android:label="new_project"
+        android:label="Med Hub"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/pharmacy_17084816">
 
         <activity
             android:name=".MainActivity"

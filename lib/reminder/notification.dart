@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -78,7 +80,40 @@ class NotificationService {
 
     debugPrint('Scheduling notification for $scheduledTime');
 
-    
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+  reminderId.hashCode,
+  '💊 Medicine Reminder',
+  'It’s time to take your medicine 💙',
+  scheduledTime,
+  NotificationDetails(
+    android: AndroidNotificationDetails(
+      'medicine_reminder_channel',
+      'Medicine Reminders',
+      channelDescription: 'Get notified when it’s time to take your meds',
+      importance: Importance.max,
+      priority: Priority.high,
+      enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 300, 200, 300]), // Vibration pattern
+      icon: '@mipmap/ic_launcher', // Replace with custom icon if you have one
+      styleInformation: BigTextStyleInformation(
+        'It’s time to take your medicine 💊.\nStay healthy and hydrated! 💧',
+        contentTitle: '💙 Reminder Alert',
+        summaryText: 'Tap to view details',
+      ),
+      color: Colors.deepPurple,
+      colorized: true,
+      ledColor: Colors.purple,
+      ledOnMs: 1000,
+      ledOffMs: 500,
+      ticker: 'Reminder Ticker',
+    ),
+  ),
+  androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+  uiLocalNotificationDateInterpretation:
+      UILocalNotificationDateInterpretation.absoluteTime,
+  matchDateTimeComponents: DateTimeComponents.time,
+);
+
 
     debugPrint('✅ Notification scheduled successfully');
   } catch (e, stack) {
