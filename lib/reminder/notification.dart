@@ -78,28 +78,7 @@ class NotificationService {
 
     debugPrint('Scheduling notification for $scheduledTime');
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      reminderId.hashCode, // Unique ID for each reminder
-      '💊 Medicine Reminder',
-      'Time to take your medicine!',
-      scheduledTime,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'medicine_reminder_channel',
-          'Medicine Reminders',
-          channelDescription: 'Scheduled medicine notifications',
-          importance: Importance.max,
-          priority: Priority.high,
-          enableVibration: true,
-          colorized: true,
-          color: Colors.blue,
-        ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time,
-    );
+    
 
     debugPrint('✅ Notification scheduled successfully');
   } catch (e, stack) {

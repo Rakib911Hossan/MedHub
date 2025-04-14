@@ -27,7 +27,7 @@ class _AddMedicineScreenState extends State<AddMedicineReminder> {
   @override
   void initState() {
     super.initState();
-    _fetchMedicineReminders();
+    // _fetchMedicineReminders();
   }
 
   Future<void> _selectTime(BuildContext context) async {
@@ -183,7 +183,7 @@ _showSuccessDialog(context);
                   onPressed: () async {
                     // Call both functions inside the onPressed callback
                     await _submitForm();
-                    // await _fetchMedicineReminders();
+                    await _fetchMedicineReminders();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6FD08E),
