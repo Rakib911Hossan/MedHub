@@ -7,6 +7,7 @@ class EditMedicineReminder extends StatefulWidget {
   final String documentId;
   final String initialName;
   final String initialDosage;
+  final int initialTimeInHour;
   final DateTime? initialTime;
   final String initialNotes;
   final bool isEditing;
@@ -16,6 +17,7 @@ class EditMedicineReminder extends StatefulWidget {
     required this.documentId,
     required this.initialName,
     required this.initialDosage,
+    required this.initialTimeInHour,
     required this.initialTime,
     required this.initialNotes,
     this.isEditing = false,
@@ -32,21 +34,26 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
 
   late String _medicineName;
   late String _dosage;
+  late int _timeInHour;
   late TimeOfDay _time;
   late String _notes;
-  late int _timeInHour;
 
   @override
   void initState() {
     super.initState();
+
+    print("Initial timeInHour: ${widget.initialTimeInHour}"); // Debug
+
     _medicineName = widget.initialName;
     _dosage = widget.initialDosage;
+    _timeInHour = widget.initialTimeInHour;
     _time =
         widget.initialTime != null
             ? TimeOfDay.fromDateTime(widget.initialTime!)
             : TimeOfDay.now();
     _notes = widget.initialNotes;
-    _fetchMedicineReminders();
+
+    // _fetchMedicineReminders();
   }
 
   Future<void> _fetchMedicineReminders() async {
@@ -121,7 +128,12 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
                 'notes': _notes,
                 'updatedAt': FieldValue.serverTimestamp(),
               });
-
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Medicine reminder updated successfully ✅'),
+              backgroundColor: Colors.green,
+            ),
+          );
           Navigator.pop(context);
         }
       } catch (e) {
@@ -167,7 +179,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
               const SizedBox(height: 20),
               _buildDosageField(),
               const SizedBox(height: 20),
-               _buildTimeInHourField(),
+              _buildTimeInHourField(),
               const SizedBox(height: 20),
               _buildTimePickerField(context),
               const SizedBox(height: 20),
@@ -179,7 +191,7 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
                   onPressed: () async {
                     // Call both functions inside the onPressed callback
                     await _submitForm();
-                    // await _fetchMedicineReminders();
+                    await _fetchMedicineReminders();
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6FD08E),
@@ -230,12 +242,21 @@ class _EditMedicineReminderState extends State<EditMedicineReminder> {
     );
   }
 
-Widget _buildTimeInHourField() {
+  Widget _buildTimeInHourField() {
     return TextFormField(
-      initialValue: _time.hour.toString(),
-      decoration: _inputDecoration('Reminder after (hours)', Icons.access_time),
-      validator: (value) =>
-          value == null || value.isEmpty ? 'Please enter the time' : null,
+      initialValue: _timeInHour.toString(),
+      decoration: _inputDecoration('Time in Hour (0-23)', Icons.access_time),
+      keyboardType: TextInputType.number,
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please enter the time in hour';
+        }
+        final int? hour = int.tryParse(value);
+        if (hour == null || hour < 0 || hour > 23) {
+          return 'Please enter a valid hour (0-23)';
+        }
+        return null;
+      },
       onSaved: (value) => _timeInHour = int.parse(value!),
     );
   }
