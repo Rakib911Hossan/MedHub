@@ -103,6 +103,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
                   context,
                   data['name'] ?? 'Unknown Medicine',
                   data['dosage'] ?? '',
+                  data['time_in_hour'] ?? 0,
                   data['time']?.toDate(),
                   data['notes'] ?? '',
                   doc.id,
@@ -124,6 +125,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
     BuildContext context,
     String name,
     String dosage,
+    int timeInHour,
     DateTime? time,
     String notes,
     String documentId,
@@ -172,6 +174,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
                               documentId,
                               name,
                               dosage,
+                              timeInHour,
                               time,
                               notes,
                             ),
@@ -189,6 +192,12 @@ class _MedicineReminderState extends State<MedicineReminder> {
               _buildDetailRow(
                 Icons.medical_services,
                 'Dosage: $dosage',
+                const Color(0xFF6FD08E),
+              ),
+              const SizedBox(height: 8),
+              _buildDetailRow(
+                Icons.access_alarm,
+                'Reminder Time: ${timeInHour.toString()} hours',
                 const Color(0xFF6FD08E),
               ),
               if (time != null) ...[
@@ -355,6 +364,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
     String documentId,
     String name,
     String dosage,
+    int timeInHour,
     DateTime? time,
     String notes,
   ) {
@@ -366,6 +376,7 @@ class _MedicineReminderState extends State<MedicineReminder> {
               documentId: documentId,
               initialName: name,
               initialDosage: dosage,
+              initialTimeInHour: timeInHour,
               initialTime: time,
               initialNotes: notes,
               isEditing: true,
