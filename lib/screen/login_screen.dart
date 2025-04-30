@@ -1,8 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:new_project/reminder/notification.dart';
 import 'signup_screen.dart';
 import 'home_screen.dart';
 import 'reset_password_screen.dart';
+ // Import the NotificationService
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,38 +49,71 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _login() async {
-    if (!_validateInputs()) return;
+  if (!_validateInputs()) return;
 
-    try {
-      await _auth.signInWithEmailAndPassword(
-        email: emailController.text.trim(),
-        password: passwordController.text.trim(),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Login Successful")),
-      );
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } on FirebaseAuthException catch (e) {
-      setState(() {
-        if (e.code == 'user-not-found') {
-          emailError = 'No user found for this email';
-        } else if (e.code == 'wrong-password') {
-          passwordError = 'Wrong password. Try again';
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.message ?? 'Login failed')),
-          );
-        }
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('An unexpected error occurred')),
-      );
+  try {
+    // Sign in with email and password
+    await _auth.signInWithEmailAndPassword(
+      email: emailController.text.trim(),
+      password: passwordController.text.trim(),
+    );
+
+    // Initialize notifications after successful login
+    await NotificationService().init();
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+
+    // Fetch the user's medicine reminders from Firestore
+    String userId = _auth.currentUser!.uid;
+
+    // Get the first reminder from Firestore for this user
+    final remindersSnapshot = await FirebaseFirestore.instance
+        .collection('user_info')
+        .doc(userId)
+        .collection('medicine_reminders')
+        .get();
+
+    if (remindersSnapshot.docs.isEmpty) {
+      debugPrint('No reminders found for the user');
+      return;
     }
+
+    // Fetch the first reminder ID (or modify this to select based on a specific criteria)
+    List<String> reminderIds = remindersSnapshot.docs.map((doc) => doc.id).toList();
+
+    // Schedule notifications for all reminders
+    for (String reminderId in reminderIds) {
+      await NotificationService().scheduleNotificationFromFirestore(userId, reminderId);
+    }
+
+    // Show a success message and navigate to the home screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Login Successful")),
+    );
+    
+    
+  } on FirebaseAuthException catch (e) {
+    setState(() {
+      if (e.code == 'user-not-found') {
+        emailError = 'No user found for this email';
+      } else if (e.code == 'wrong-password') {
+        passwordError = 'Wrong password. Try again';
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message ?? 'Login failed')),
+        );
+      }
+    });
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('An unexpected error occurred')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

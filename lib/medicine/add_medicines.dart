@@ -16,12 +16,18 @@ class _AddMedicineState extends State<AddMedicine> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _quantityController = TextEditingController();
+  final TextEditingController _discountPercentController = TextEditingController();
   final TextEditingController _imageController = TextEditingController();
   final TextEditingController _categoryController = TextEditingController();
   final TextEditingController _companyController = TextEditingController();
   final TextEditingController _genericGroupController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
 
   double _totalPrice = 0.0;
+  double _discountAmountEach = 0.0;
+  double _discountedPriceEach = 0.0;
+  double _totalDiscountAmount = 0.0;
+  double _totalDiscountedPrice = 0.0;
 
   final CollectionReference medicinesCollection = FirebaseFirestore.instance
       .collection('medicines');
@@ -29,8 +35,13 @@ class _AddMedicineState extends State<AddMedicine> {
   void _calculateTotalPrice() {
     double price = double.tryParse(_priceController.text) ?? 0.0;
     int quantity = int.tryParse(_quantityController.text) ?? 0;
+    double discountPercent = double.tryParse(_discountPercentController.text) ?? 0.0;
     setState(() {
       _totalPrice = price * quantity;
+       _discountAmountEach =  (price * discountPercent) / 100;
+      _discountedPriceEach = price - _discountAmountEach;
+      _totalDiscountAmount = (_totalPrice * discountPercent) / 100;
+      _totalDiscountedPrice = _totalPrice - _totalDiscountAmount;
     });
   }
 
@@ -38,19 +49,22 @@ class _AddMedicineState extends State<AddMedicine> {
     String name = _nameController.text.trim();
     String price = _priceController.text.trim();
     String quantity = _quantityController.text.trim();
+    String discountPercent = _discountPercentController.text.trim();
     String image = _imageController.text.trim();
     String category = _categoryController.text.trim();
     String company = _companyController.text.trim();
     String genericGroup = _genericGroupController.text.trim();
+    String description = _descriptionController.text.trim();
     String? uid = FirebaseAuth.instance.currentUser?.uid;
 
     if (name.isEmpty ||
         price.isEmpty ||
         quantity.isEmpty ||
+        discountPercent.isEmpty ||
         category.isEmpty ||
         company.isEmpty ||
-        genericGroup.isEmpty ||
-        uid == null) {
+        description.isEmpty ||
+        genericGroup.isEmpty) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('All fields are required!')));
@@ -63,11 +77,19 @@ class _AddMedicineState extends State<AddMedicine> {
         'name': name,
         'price': double.tryParse(price) ?? 0.0,
         'quantity': int.tryParse(quantity) ?? 0,
+        'discount_percent': double.tryParse(discountPercent) ?? 0.0,
+        'discount_amount': _discountAmountEach,
+        'discount_price_each': _discountedPriceEach,
+        'total_discount_amount': _totalDiscountAmount,
+        'total_discount_price': _totalDiscountedPrice,
         'total_price': _totalPrice,
         'image': image.isNotEmpty ? image : "https://via.placeholder.com/150",
         'category': category,
         'company': company,
         'generic_group': genericGroup,
+        'description': description,
+        'created_at': DateTime.now(),
+        'updated_at': DateTime.now(),
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -169,12 +191,26 @@ class _AddMedicineState extends State<AddMedicine> {
               onChanged: (value) => _calculateTotalPrice(),
             ),
             TextField(
-              controller: _quantityController,
+              controller: _discountPercentController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
-                labelText: 'Quantity of medicine',
+                labelText: 'Discount Percentage',
               ),
               onChanged: (value) => _calculateTotalPrice(),
+            ),
+            TextField(
+              controller: TextEditingController(text: _discountAmountEach.toString()),
+              enabled: false, // Disable editing
+              decoration: const InputDecoration(
+                labelText: 'Discount Amount Each (auto-calculated)',
+              ),
+            ),
+            TextField(
+              controller: TextEditingController(text: _discountedPriceEach.toString()),
+              enabled: false, // Disable editing
+              decoration: const InputDecoration(
+                labelText: 'Discounted Price Each (auto-calculated)',
+              ),
             ),
             TextField(
               controller: _categoryController,
@@ -188,12 +224,37 @@ class _AddMedicineState extends State<AddMedicine> {
               controller: _genericGroupController,
               decoration: const InputDecoration(labelText: 'Generic Group'),
             ),
-            const SizedBox(height: 10),
+            TextField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(labelText: 'Description'),
+            ),
+            TextField(
+              controller: _quantityController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Quantity of medicine',
+              ),
+              onChanged: (value) => _calculateTotalPrice(),
+            ),
             TextField(
               controller: TextEditingController(text: _totalPrice.toString()),
               enabled: false, // Disable editing
               decoration: const InputDecoration(
                 labelText: 'Total Price (auto-calculated)',
+              ),
+            ),
+            TextField(
+              controller: TextEditingController(text: _totalDiscountedPrice.toString()),
+              enabled: false, // Disable editing
+              decoration: const InputDecoration(
+                labelText: 'Total Discounted Price (auto-calculated)',
+              ),
+            ),
+            TextField(
+              controller: TextEditingController(text: _totalDiscountAmount.toString()),
+              enabled: false, // Disable editing
+              decoration: const InputDecoration(
+                labelText: 'Total Discount Amount (auto-calculated)',
               ),
             ),
             const SizedBox(height: 20),

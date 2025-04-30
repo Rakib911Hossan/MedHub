@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:new_project/services/add_medicines.dart';
-import 'package:new_project/services/edit_medicine.dart';
+import 'package:new_project/medicine/add_medicines.dart';
+import 'package:new_project/medicine/edit_medicine.dart';
 
 class Medicines extends StatefulWidget {
   const Medicines({super.key});
@@ -66,7 +66,7 @@ class _MedicinesState extends State<Medicines> {
             filled: true,
             fillColor: Theme.of(
               context,
-            ).colorScheme.surfaceVariant.withOpacity(0.4),
+            ).colorScheme.surfaceContainerHighest.withOpacity(0.4),
             hintText: 'Search medicines...',
             hintStyle: TextStyle(
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
@@ -75,49 +75,24 @@ class _MedicinesState extends State<Medicines> {
               Icons.search_rounded,
               color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
             ),
-            suffixIcon: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 200),
-              transitionBuilder: (child, animation) {
-                return ScaleTransition(scale: animation, child: child);
-              },
-              child:
-                  searchQuery.isNotEmpty
-                      ? IconButton(
-                        key: const ValueKey('clear-button'),
-                        icon: Icon(
-                          Icons.close_rounded,
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.onSurface.withOpacity(0.7),
-                        ),
-                        onPressed: () {
-                          searchController.clear();
-                          setState(() {
-                            searchQuery = '';
-                          });
-                          FocusScope.of(context).unfocus();
-                        },
-                      )
-                      : const SizedBox.shrink(key: ValueKey('empty')),
-            ),
+          suffixIcon:
+                searchQuery.isNotEmpty
+                    ? IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () {
+                        searchController.clear();
+                        setState(() => searchQuery = '');
+                        FocusScope.of(context).unfocus();
+                      },
+                    )
+                    : null,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-            fontSize: 16,
-          ),
-          onChanged: (value) {
-            setState(() {
-              searchQuery = value.toLowerCase();
-            });
-          },
-          onTapOutside: (_) {
-            FocusScope.of(context).unfocus();
-          },
+          onChanged:
+              (value) => setState(() => searchQuery = value.toLowerCase()),
         ),
       ),
     );
@@ -144,7 +119,7 @@ class _MedicinesState extends State<Medicines> {
     return Card(
       elevation: 3,
       color: getRandomColor(medicine.id),
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
       child: Padding(
         padding: const EdgeInsets.only(
           top: 12.0,
@@ -153,8 +128,8 @@ class _MedicinesState extends State<Medicines> {
           children: [
             Container(
               height: 80,
-              width: 100,
-              margin: const EdgeInsets.only(bottom: 8), // Added bottom margin
+              width: 130,
+              margin: const EdgeInsets.only(bottom: 4), // Added bottom margin
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(
                   8,
@@ -182,7 +157,7 @@ class _MedicinesState extends State<Medicines> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: Text(
                 medicine['name'] ?? 'Unknown Medicine',
                 style: const TextStyle(
@@ -190,16 +165,20 @@ class _MedicinesState extends State<Medicines> {
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
             Padding(
               padding: const EdgeInsets.only(top: 4.0),
               child: Text(
-                "BDT ${medicine['price'] ?? 'N/A'}",
-                style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                "Price: BDT ${medicine['price'] ?? 'N/A'}",
+                style: TextStyle(fontSize: 13, color: Colors.grey[700],
+                 fontWeight: FontWeight.bold,),
+                 maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
+              
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
