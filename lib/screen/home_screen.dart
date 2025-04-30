@@ -2,11 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'package:new_project/doctors/appointments/appointments.dart';
-import 'package:new_project/doctors/doctors_list.dart';
-import 'package:new_project/doctors/doctors_profile.dart';
 import 'package:new_project/doctors/edit_doctors_profile.dart';
-import 'package:new_project/reminder/reminder.dart';
 import 'package:new_project/order/all_orders.dart';
 import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/medicine/medicines.dart';
@@ -163,29 +159,29 @@ class _HomeScreenState extends State<HomeScreen> {
                       );
                     },
                   ),
-                  ListTile(
-                    leading: const Icon(
-                      Icons
-                          .calendar_today, // Or Icons.event_available for alternate icon
-                      color: Colors.indigo, // Matching your orders tile color
-                    ),
-                    title: const Text(
-                      'Appointments',
-                      style: TextStyle(color: Colors.black87),
-                    ),
-                    tileColor: Colors.grey[100],
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AppointmentsScreen(),
-                        ),
-                      );
-                    },
-                  ),
+                  // ListTile(
+                  //   leading: const Icon(
+                  //     Icons
+                  //         .calendar_today, // Or Icons.event_available for alternate icon
+                  //     color: Colors.indigo, // Matching your orders tile color
+                  //   ),
+                  //   title: const Text(
+                  //     'Appointments',
+                  //     style: TextStyle(color: Colors.black87),
+                  //   ),
+                  //   tileColor: Colors.grey[100],
+                  //   shape: RoundedRectangleBorder(
+                  //     borderRadius: BorderRadius.circular(10),
+                  //   ),
+                  //   onTap: () {
+                  //     Navigator.push(
+                  //       context,
+                  //       MaterialPageRoute(
+                  //         builder: (context) => const AppointmentsScreen(),
+                  //       ),
+                  //     );
+                  //   },
+                  // ),
                   if (userRole == 'admin' || userRole == 'deliveryMan')
                     ListTile(
                       leading: const Icon(
@@ -235,31 +231,31 @@ class _HomeScreenState extends State<HomeScreen> {
                         );
                       },
                     ),
-                  if (userRole == 'doctor' || userRole == 'admin')
-                    ListTile(
-                      leading: const Icon(
-                        Icons.medical_services,
-                        color: Color.fromARGB(255, 46, 125, 219),
-                      ),
-                      title: const Text(
-                        'Doctors Profiles',
-                        style: TextStyle(color: Colors.black87),
-                      ),
-                      tileColor: Colors.grey[100],
-                      onTap: () async {
-                        bool hasProfile = await _fetchExistingProfile();
+                  // if (userRole == 'doctor' || userRole == 'admin')
+                  //   ListTile(
+                  //     leading: const Icon(
+                  //       Icons.medical_services,
+                  //       color: Color.fromARGB(255, 46, 125, 219),
+                  //     ),
+                  //     title: const Text(
+                  //       'Doctors Profiles',
+                  //       style: TextStyle(color: Colors.black87),
+                  //     ),
+                  //     tileColor: Colors.grey[100],
+                  //     onTap: () async {
+                  //       bool hasProfile = await _fetchExistingProfile();
 
-                        if (!hasProfile) {
-                          // If no profile exists, navigate to AddDoctorsProfile
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AddDoctorsProfile(),
-                            ),
-                          );
-                        }
-                      },
-                    ),
+                  //       if (!hasProfile) {
+                  //         // If no profile exists, navigate to AddDoctorsProfile
+                  //         Navigator.push(
+                  //           context,
+                  //           MaterialPageRoute(
+                  //             builder: (context) => const AddDoctorsProfile(),
+                  //           ),
+                  //         );
+                  //       }
+                  //     },
+                  //   ),
 
                   if (userRole == 'admin')
                     ListTile(
@@ -382,15 +378,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     'lib/assets/doctor.jpg',
                     'Consult Doctor',
                     'Get expert medical advice from your home',
-                    const Color.fromARGB(255, 93, 166, 238), // Azure blue
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DoctorsList(),
-                        ),
-                      );
-                    },
+                    const Color.fromARGB(255, 93, 166, 238), () {}, // Azure blue
+                    // () {
+                    //   Navigator.push(
+                    //     context,
+                    //     MaterialPageRoute(
+                    //       builder: (context) => const DoctorsList(),
+                    //     ),
+                    //   );
+                    // },
                   ),
                   const SizedBox(height: 15),
                   _buildServiceCard(
@@ -398,17 +394,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     'lib/assets/time.png', // Use a medicine/reminder related image
                     'Medicine Reminder',
                     'Never miss a dose',
-                    const Color.fromARGB(255, 106, 179, 129), // Fresh green (like pills/health)
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  const MedicineReminder(), // Your reminder screen
-                        ),
-                      );
-                    },
+                    const Color.fromARGB(255, 106, 179, 129),  () {}, // Fresh green (like pills/health)
+                    // () {
+                    //   Navigator.push(
+                    //     context,
+                    //     MaterialPageRoute(
+                    //       builder:
+                    //           (context) =>
+                    //               const MedicineReminder(), // Your reminder screen
+                    //     ),
+                    //   );
+                    // },
                   ),
                 ],
               ),

@@ -147,12 +147,14 @@ class _OrdersState extends State<Orders> {
               final status = order['status'].toString().toLowerCase();
               final isPending = status == 'pending';
               final isConfirmed = status == 'confirmed';
+              final isDelivered = status == 'delivered';
               final canConfirm =
                   (userRole == 'admin' || userRole == 'deliveryMan') &&
                   isPending;
               final canDeliver =
                   (userRole == 'deliveryMan' || userRole == 'admin') &&
                   isConfirmed;
+              final canComplaint = (userRole == 'user') && isDelivered;
 
               return Card(
                 elevation: 3,
@@ -224,6 +226,16 @@ class _OrdersState extends State<Orders> {
                                         order,
                                       ),
                                 ),
+                              if (canComplaint)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.report,
+                                    color: Colors.redAccent,
+                                  ),
+                                  onPressed: () => _showNotDeliveredConfirmation(order['documentId']),
+
+                                  tooltip: 'Report Not Received',
+                                ),
                             ],
                           ),
                         ],
@@ -284,6 +296,50 @@ class _OrdersState extends State<Orders> {
             },
           );
         },
+      ),
+    );
+  }
+
+  Future<void> _markAsNotDelivered(String documentId) async {
+    try {
+      await _firestore.collection('orders').doc(documentId).update({
+        'status': 'not delivered',
+        'updatedAt': Timestamp.now(),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order marked as not delivered')),
+      );
+      setState(() {}); // Refresh orders
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update order status: $e')),
+      );
+    }
+  }
+
+  void _showNotDeliveredConfirmation(String documentId) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Confirm'),
+        content: const Text('Are you sure you did not receive the order?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            onPressed: () {
+              Navigator.pop(context);
+              _markAsNotDelivered(documentId);
+            },
+            child: const Text(
+              'Yes, Report',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }
