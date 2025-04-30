@@ -67,7 +67,7 @@ class _AllOrdersState extends State<AllOrders> {
     QuerySnapshot querySnapshot =
         await _firestore
             .collection('orders')
-            .orderBy('createdAt', descending: true)
+            .orderBy('updatedAt', descending: true)
             .get();
 
     return querySnapshot.docs.map((doc) {
@@ -181,12 +181,16 @@ class _AllOrdersState extends State<AllOrders> {
                       final status = order['status'].toString().toLowerCase();
                       final isPending = status == 'pending';
                       final isConfirmed = status == 'confirmed';
+                      final isNotDelivered = status == 'not delivered';
                       final canConfirm =
                           (userRole == 'admin' || userRole == 'deliveryMan') &&
                           isPending;
                       final canDeliver =
                           (userRole == 'deliveryMan' || userRole == 'admin') &&
                           isConfirmed;
+                      final canComplaint =
+                          (userRole == 'user' || userRole == 'admin') &&
+                          isNotDelivered;
 
                       return Card(
                         elevation: 3,
@@ -256,9 +260,25 @@ class _AllOrdersState extends State<AllOrders> {
                                             color: Colors.green,
                                           ),
                                           onPressed: () async {
-                                            await _showDeliveredConfirmationDialog(order);
+                                            await _showDeliveredConfirmationDialog(
+                                              order,
+                                            );
                                             await _totalBillings();
                                           },
+                                        ),
+                                      if (canComplaint)
+                                        IconButton(
+                                          icon: const Icon(
+                                            Icons.report,
+                                            color: Colors.redAccent,
+                                          ),
+                                          onPressed:
+                                              () =>
+                                                  _showNotDeliveredConfirmation(
+                                                    order['documentId'],
+                                                  ),
+
+                                          tooltip: 'Report Not Received',
                                         ),
                                     ],
                                   ),
@@ -321,6 +341,55 @@ class _AllOrdersState extends State<AllOrders> {
                   );
                 },
               ),
+    );
+  }
+
+  Future<void> _markAsNotDelivered(String documentId) async {
+    try {
+      await _firestore.collection('orders').doc(documentId).update({
+        'status': 'delivered',
+        'updatedAt': Timestamp.now(),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order marked as delivered')),
+      );
+      setState(() {}); // Refresh orders
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update order status: $e')),
+      );
+    }
+  }
+
+  void _showNotDeliveredConfirmation(String documentId) {
+    showDialog(
+      context: context,
+      builder:
+          (_) => AlertDialog(
+            title: const Text('Confirm'),
+            content: const Text(
+              'Are you sure you that the order is delivered?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color.fromARGB(255, 97, 139, 69),
+                ),
+                onPressed: () {
+                  Navigator.pop(context);
+                  _markAsNotDelivered(documentId);
+                },
+                child: const Text(
+                  'Yes, Delivered',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ),
     );
   }
 
@@ -525,179 +594,239 @@ class _AllOrdersState extends State<AllOrders> {
   }
 
   Future<void> _totalBillings() async {
-  try {
-    // 1. Get all delivered orders
-    QuerySnapshot deliveredOrders = await FirebaseFirestore.instance
-        .collection('orders')
-        .where('status', isEqualTo: 'delivered')
-        .get();
-
-    // 2. Get all medicines
-    QuerySnapshot medicinesSnapshot = await FirebaseFirestore.instance
-        .collection('medicines')
-        .get();
-
-    // 3. Process each delivered order
-    for (var orderDoc in deliveredOrders.docs) {
-      final order = orderDoc.data() as Map<String, dynamic>;
-      final items = order['items'] as List<dynamic>;
-
-      // 4. Update medicine quantities for each item in the order
-      for (var item in items.cast<Map<String, dynamic>>()) {
-        final medicineId = item['medicineId'];
-        final quantitySold = item['quantity'];
-        final totalDiscountAmount = item['total_discount_amount'] ?? 0;
-        final totalPrice = item['total_price'] ?? 0;
-        final totalDiscountPrice = item['total_discount_amount'] ?? 0;
-
-        // Find the medicine in the list
-        final medicineDoc = medicinesSnapshot.docs.cast<QueryDocumentSnapshot?>().firstWhere(
-          (doc) => doc?.id == medicineId,
-          orElse: () => null,
-        );
-
-        if (medicineDoc != null) {
-          final currentQuantity = medicineDoc['quantity'] ?? 0;
-          final currentDiscountAmount = medicineDoc['total_discount_amount'] ?? 0;
-          final currentDiscountPrice = medicineDoc['total_discount_price'] ?? 0;
-          final currentTotalPrice = medicineDoc['total_price'] ?? 0;
-
-          final newQuantity = currentQuantity - quantitySold;
-          final newDiscountAmount = currentDiscountAmount + totalDiscountAmount;
-          final newDiscountPrice = currentDiscountPrice + totalDiscountPrice;
-          final newTotalPrice = currentTotalPrice + totalPrice;
-
-          // Update medicine quantity
+    try {
+      // 1. Get all delivered orders
+      QuerySnapshot deliveredOrders =
           await FirebaseFirestore.instance
-              .collection('medicines')
-              .doc(medicineId)
-              .update({
-            'quantity': newQuantity,
-            'total_discount_amount': newDiscountAmount,
-            'total_discount_price': newDiscountPrice,
-            'total_price': newTotalPrice,
-            'updated_at': FieldValue.serverTimestamp(),
-          });
+              .collection('orders')
+              .where('status', isEqualTo: 'delivered')
+              .get();
+
+      // 2. Get all medicines
+      QuerySnapshot medicinesSnapshot =
+          await FirebaseFirestore.instance.collection('medicines').get();
+
+      // 3. Process each delivered order
+      for (var orderDoc in deliveredOrders.docs) {
+        final order = orderDoc.data() as Map<String, dynamic>;
+        final items = order['items'] as List<dynamic>;
+
+        // 4. Update medicine quantities for each item in the order
+        for (var item in items.cast<Map<String, dynamic>>()) {
+          final medicineId = item['medicineId'];
+          final quantitySold = item['quantity'];
+          final totalDiscountAmount = item['total_discount_amount'] ?? 0;
+          final totalPrice = item['total_price'] ?? 0;
+          final totalDiscountPrice = item['total_discount_amount'] ?? 0;
+
+          // Find the medicine in the list
+          final medicineDoc = medicinesSnapshot.docs
+              .cast<QueryDocumentSnapshot?>()
+              .firstWhere((doc) => doc?.id == medicineId, orElse: () => null);
+
+          if (medicineDoc != null) {
+            final currentQuantity = medicineDoc['quantity'] ?? 0;
+            final currentDiscountAmount =
+                medicineDoc['total_discount_amount'] ?? 0;
+            final currentDiscountPrice =
+                medicineDoc['total_discount_price'] ?? 0;
+            final currentTotalPrice = medicineDoc['total_price'] ?? 0;
+
+            final newQuantity = currentQuantity - quantitySold;
+            final newDiscountAmount =
+                currentDiscountAmount + totalDiscountAmount;
+            final newDiscountPrice = currentDiscountPrice + totalDiscountPrice;
+            final newTotalPrice = currentTotalPrice + totalPrice;
+
+            // Update medicine quantity
+            await FirebaseFirestore.instance
+                .collection('medicines')
+                .doc(medicineId)
+                .update({
+                  'quantity': newQuantity,
+                  'total_discount_amount': newDiscountAmount,
+                  'total_discount_price': newDiscountPrice,
+                  'total_price': newTotalPrice,
+                  'updated_at': FieldValue.serverTimestamp(),
+                });
+          }
         }
       }
+
+      // 5. Create billing records
+      await _createBillingRecords(deliveredOrders);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Billing processed successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error processing billing: $e')));
+    }
+  }
+
+  Future<void> _createBillingRecords(QuerySnapshot deliveredOrders) async {
+    final now = DateTime.now();
+    final billingId = 'BLNG${DateFormat('MMddHHmmss').format(now)}';
+    final currentMonth = DateFormat('yyyy-MM').format(now);
+    final currentYear = DateFormat('yyyy').format(now);
+
+    // Calculate daily totals
+    double dailySales = 0;
+    double dailyPurchases = 0;
+    double dailyPurchasesAfterDiscount = 0;
+    double amountAterSales = 0;
+
+    for (var orderDoc in deliveredOrders.docs) {
+      final order = orderDoc.data() as Map<String, dynamic>;
+      dailySales += (order['totalAmount'] ?? 0).toDouble();
     }
 
-    // 5. Create billing records
-    await _createBillingRecords(deliveredOrders);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Billing processed successfully')),
+    // Get medicines to calculate purchases
+    QuerySnapshot medicinesSnapshot =
+        await FirebaseFirestore.instance.collection('medicines').get();
+
+    for (var medDoc in medicinesSnapshot.docs) {
+      final medicine = medDoc.data() as Map<String, dynamic>;
+      dailyPurchases += (medicine['total_price'] ?? 0).toDouble();
+      dailyPurchasesAfterDiscount +=
+          (medicine['total_discount_price'] ?? 0).toDouble();
+    }
+
+    amountAterSales = dailyPurchasesAfterDiscount - dailySales;
+    // Get or create daily document
+    final dailyDocRef = FirebaseFirestore.instance
+        .collection('billings_daily')
+        .doc(DateFormat('yyyy-MM-dd').format(now));
+
+    await dailyDocRef.set({
+      'date': now,
+      'sales': double.parse(dailySales.toStringAsFixed(2)),
+      'purchases': double.parse(dailyPurchases.toStringAsFixed(2)),
+      'purchasesAfterDiscount': double.parse(
+        dailyPurchasesAfterDiscount.toStringAsFixed(2),
+      ),
+      'amountAterSales': double.parse(amountAterSales.toStringAsFixed(2)),
+      'billingId': billingId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    // Calculate monthly totals from daily data
+    final monthlySales = await _calculatePeriodTotal(
+      'billings_daily',
+      currentMonth,
+      'sales',
     );
-  } catch (e) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error processing billing: $e')),
+    final monthlyPurchases = await _calculatePeriodTotal(
+      'billings_daily',
+      currentMonth,
+      'purchases',
     );
-  }
-}
+    final monthlyPurchasesAfterDiscount = await _calculatePeriodTotal(
+      'billings_daily',
+      currentMonth,
+      'purchasesAfterDiscount',
+    );
+    final monthlyAmountAterSales = await _calculatePeriodTotal(
+      'billings_daily',
+      currentMonth,
+      'amountAterSales',
+    );
 
-Future<void> _createBillingRecords(QuerySnapshot deliveredOrders) async {
-  final now = DateTime.now();
-  final billingId = 'BLNG${DateFormat('MMddHHmmss').format(now)}';
-  final currentMonth = DateFormat('yyyy-MM').format(now);
-  final currentYear = DateFormat('yyyy').format(now);
+    // Update monthly document
+    final monthlyDocRef = FirebaseFirestore.instance
+        .collection('billings_monthly')
+        .doc(currentMonth);
 
-  // Calculate daily totals
-  double dailySales = 0;
-  double dailyPurchases = 0;
-  double dailyPurchasesAfterDiscount = 0;
-  double amountAterSales = 0;
-  
-  for (var orderDoc in deliveredOrders.docs) {
-    final order = orderDoc.data() as Map<String, dynamic>;
-    dailySales += (order['totalAmount'] ?? 0).toDouble();
-  }
+    await monthlyDocRef.set({
+      'month': currentMonth,
+      'sales': double.parse(monthlySales.toStringAsFixed(2)),
+      'purchases': double.parse(monthlyPurchases.toStringAsFixed(2)),
+      'purchasesAfterDiscount': double.parse(
+        monthlyPurchasesAfterDiscount.toStringAsFixed(2),
+      ),
+      'amountAterSales': double.parse(
+        monthlyAmountAterSales.toStringAsFixed(2),
+      ),
+      'billingId': billingId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
 
-  // Get medicines to calculate purchases
-  QuerySnapshot medicinesSnapshot = await FirebaseFirestore.instance
-      .collection('medicines')
-      .get();
-  
-  for (var medDoc in medicinesSnapshot.docs) {
-    final medicine = medDoc.data() as Map<String, dynamic>;
-    dailyPurchases += (medicine['total_price'] ?? 0).toDouble();
-    dailyPurchasesAfterDiscount += (medicine['total_discount_price'] ?? 0).toDouble();
-  }
+    // Calculate yearly totals from monthly data
+    final yearlySales = await _calculatePeriodTotal(
+      'billings_monthly',
+      currentYear,
+      'sales',
+    );
+    final yearlyPurchases = await _calculatePeriodTotal(
+      'billings_monthly',
+      currentYear,
+      'purchases',
+    );
+    final yearlyPurchasesAfterDiscount = await _calculatePeriodTotal(
+      'billings_monthly',
+      currentYear,
+      'purchasesAfterDiscount',
+    );
+    final yearlyAmountAterSales = await _calculatePeriodTotal(
+      'billings_monthly',
+      currentYear,
+      'amountAterSales',
+    );
 
-  amountAterSales = dailyPurchasesAfterDiscount - dailySales;
-  // Get or create daily document
-  final dailyDocRef = FirebaseFirestore.instance
-      .collection('billings_daily')
-      .doc(DateFormat('yyyy-MM-dd').format(now));
+    // Update yearly document
+    final yearlyDocRef = FirebaseFirestore.instance
+        .collection('billings_yearly')
+        .doc(currentYear);
 
-  await dailyDocRef.set({
-    'date': now,
-    'sales': double.parse(dailySales.toStringAsFixed(2)),
-    'purchases': double.parse(dailyPurchases.toStringAsFixed(2)),
-    'purchasesAfterDiscount': double.parse(dailyPurchasesAfterDiscount.toStringAsFixed(2)),
-    'amountAterSales': double.parse(amountAterSales.toStringAsFixed(2)),
-    'billingId': billingId,
-    'updatedAt': FieldValue.serverTimestamp(),
-  }, SetOptions(merge: true));
-
-  // Calculate monthly totals from daily data
-  final monthlySales = await _calculatePeriodTotal('billings_daily', currentMonth, 'sales');
-  final monthlyPurchases = await _calculatePeriodTotal('billings_daily', currentMonth, 'purchases');
-  final monthlyPurchasesAfterDiscount = await _calculatePeriodTotal('billings_daily', currentMonth, 'purchasesAfterDiscount');
-  final monthlyAmountAterSales = await _calculatePeriodTotal('billings_daily', currentMonth, 'amountAterSales');
-
-  // Update monthly document
-  final monthlyDocRef = FirebaseFirestore.instance
-      .collection('billings_monthly')
-      .doc(currentMonth);
-
-  await monthlyDocRef.set({
-    'month': currentMonth,
-    'sales': double.parse(monthlySales.toStringAsFixed(2)),
-    'purchases': double.parse(monthlyPurchases.toStringAsFixed(2)),
-      'purchasesAfterDiscount': double.parse(monthlyPurchasesAfterDiscount.toStringAsFixed(2)),
-    'amountAterSales': double.parse(monthlyAmountAterSales.toStringAsFixed(2)),
-    'billingId': billingId,
-    'updatedAt': FieldValue.serverTimestamp(),
-  }, SetOptions(merge: true));
-
-  // Calculate yearly totals from monthly data
-  final yearlySales = await _calculatePeriodTotal('billings_monthly', currentYear, 'sales');
-  final yearlyPurchases = await _calculatePeriodTotal('billings_monthly', currentYear, 'purchases');
-  final yearlyPurchasesAfterDiscount = await _calculatePeriodTotal('billings_monthly', currentYear, 'purchasesAfterDiscount');
-  final yearlyAmountAterSales = await _calculatePeriodTotal('billings_monthly', currentYear, 'amountAterSales');
-
-  // Update yearly document
-  final yearlyDocRef = FirebaseFirestore.instance
-      .collection('billings_yearly')
-      .doc(currentYear);
-
-  await yearlyDocRef.set({
-    'year': currentYear,
-    'sales': double.parse(yearlySales.toStringAsFixed(2)),
-    'purchases': double.parse(yearlyPurchases.toStringAsFixed(2)),
-    'purchasesAfterDiscount': double.parse(yearlyPurchasesAfterDiscount.toStringAsFixed(2)),
-    'amountAterSales': double.parse(yearlyAmountAterSales.toStringAsFixed(2)),
-    'billingId': billingId,
-    'updatedAt': FieldValue.serverTimestamp(),
-  }, SetOptions(merge: true));
-}
-
-Future<double> _calculatePeriodTotal(String collection, String period, String field) async {
-  double total = 0;
-  
-  final querySnapshot = await FirebaseFirestore.instance
-      .collection(collection)
-      .where(collection == 'billings_daily' ? FieldPath.documentId : collection == 'billings_monthly' ? 'month' : 'year', 
-             isGreaterThanOrEqualTo: period)
-      .where(collection == 'billings_daily' ? FieldPath.documentId : collection == 'billings_monthly' ? 'month' : 'year', 
-             isLessThan: collection == 'billings_daily' ? '$period~' : '$period~')
-      .get();
-
-  for (var doc in querySnapshot.docs) {
-    final data = doc.data();
-    total += (data[field] ?? 0).toDouble();
+    await yearlyDocRef.set({
+      'year': currentYear,
+      'sales': double.parse(yearlySales.toStringAsFixed(2)),
+      'purchases': double.parse(yearlyPurchases.toStringAsFixed(2)),
+      'purchasesAfterDiscount': double.parse(
+        yearlyPurchasesAfterDiscount.toStringAsFixed(2),
+      ),
+      'amountAterSales': double.parse(yearlyAmountAterSales.toStringAsFixed(2)),
+      'billingId': billingId,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
-  return total;
-}
+  Future<double> _calculatePeriodTotal(
+    String collection,
+    String period,
+    String field,
+  ) async {
+    double total = 0;
+
+    final querySnapshot =
+        await FirebaseFirestore.instance
+            .collection(collection)
+            .where(
+              collection == 'billings_daily'
+                  ? FieldPath.documentId
+                  : collection == 'billings_monthly'
+                  ? 'month'
+                  : 'year',
+              isGreaterThanOrEqualTo: period,
+            )
+            .where(
+              collection == 'billings_daily'
+                  ? FieldPath.documentId
+                  : collection == 'billings_monthly'
+                  ? 'month'
+                  : 'year',
+              isLessThan:
+                  collection == 'billings_daily' ? '$period~' : '$period~',
+            )
+            .get();
+
+    for (var doc in querySnapshot.docs) {
+      final data = doc.data();
+      total += (data[field] ?? 0).toDouble();
+    }
+
+    return total;
+  }
 }

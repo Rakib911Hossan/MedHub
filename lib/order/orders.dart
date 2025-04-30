@@ -67,7 +67,7 @@ class _OrdersState extends State<Orders> {
         await _firestore
             .collection('orders')
             .where('userId', isEqualTo: user!.uid)
-            .orderBy('createdAt', descending: true)
+            .orderBy('updatedAt', descending: true)
             .get();
 
     return querySnapshot.docs.map((doc) {
@@ -154,7 +154,7 @@ class _OrdersState extends State<Orders> {
               final canDeliver =
                   (userRole == 'deliveryMan' || userRole == 'admin') &&
                   isConfirmed;
-              final canComplaint = (userRole == 'user') && isDelivered;
+              final canComplaint = (userRole == 'user' || userRole == 'admin') && isDelivered;
 
               return Card(
                 elevation: 3,
