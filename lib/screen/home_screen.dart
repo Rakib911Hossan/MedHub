@@ -7,6 +7,7 @@ import 'package:new_project/order/all_orders.dart';
 import 'package:new_project/order/order_medicine.dart';
 import 'package:new_project/medicine/medicines.dart';
 import 'package:new_project/order/orders.dart';
+import 'package:new_project/reminder/reminder.dart';
 import 'package:new_project/users/profile_screen.dart';
 import 'package:new_project/users/user_list';
 import 'login_screen.dart';
@@ -394,17 +395,17 @@ class _HomeScreenState extends State<HomeScreen> {
                     'lib/assets/time.png', // Use a medicine/reminder related image
                     'Medicine Reminder',
                     'Never miss a dose',
-                    const Color.fromARGB(255, 106, 179, 129),  () {}, // Fresh green (like pills/health)
-                    // () {
-                    //   Navigator.push(
-                    //     context,
-                    //     MaterialPageRoute(
-                    //       builder:
-                    //           (context) =>
-                    //               const MedicineReminder(), // Your reminder screen
-                    //     ),
-                    //   );
-                    // },
+                    const Color.fromARGB(255, 106, 179, 129),  // Fresh green (like pills/health)
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  const MedicineReminder(), // Your reminder screen
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
