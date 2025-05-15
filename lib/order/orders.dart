@@ -322,7 +322,7 @@ class _OrdersState extends State<Orders> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Confirm'),
-        content: const Text('Are you sure you did not receive the order?'),
+        content: const Text('Are you sure, you did not receive the order?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -354,7 +354,7 @@ class _OrdersState extends State<Orders> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Confirm Delete'),
-          content: const Text('Are you sure you want to delete this order?'),
+          content: const Text('Are you sure, you want to delete this order?'),
           actions: <Widget>[
             TextButton(
               child: const Text('Cancel'),
