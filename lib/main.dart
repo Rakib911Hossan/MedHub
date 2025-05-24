@@ -17,13 +17,13 @@ void main() async {
   tz.initializeTimeZones();
   tz.setLocalLocation(tz.getLocation('Asia/Dhaka')); // Change to your timezone
 
-  // const AndroidInitializationSettings initializationSettingsAndroid =
-  //     AndroidInitializationSettings('@mipmap/ic_launcher');
+  const AndroidInitializationSettings initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
 
-  // const InitializationSettings initializationSettings =
-  //     InitializationSettings(android: initializationSettingsAndroid);
+  const InitializationSettings initializationSettings =
+      InitializationSettings(android: initializationSettingsAndroid);
 
-  // await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   await NotificationService().init();
   await Firebase.initializeApp();
   runApp(const MyApp());
