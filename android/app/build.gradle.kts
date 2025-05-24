@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.example.new_project"
-    compileSdk = 34  // Use the latest stable version
+    compileSdk = 35  // Use the latest stable version
 
     defaultConfig {
         applicationId = "com.example.new_project"
@@ -20,6 +20,7 @@ android {
     }
 
     compileOptions {
+         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_21
         targetCompatibility = JavaVersion.VERSION_21
     }
@@ -36,6 +37,7 @@ android {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
     val composeUiVersion = "1.2.0"
     implementation("androidx.compose.ui:ui:$composeUiVersion")
     implementation("androidx.compose.ui:ui-tooling-preview:$composeUiVersion")
