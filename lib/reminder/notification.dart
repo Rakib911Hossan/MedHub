@@ -77,48 +77,47 @@ class NotificationService {
     final dosage = data['dosage'] ?? '';
     final int timeInHour = data['timeInHour'] ?? 0;
 
+    // Initial time from Firestore
     final DateTime initialTime = (data['time'] as Timestamp).toDate();
+
     final scheduledTime = tz.TZDateTime.from(initialTime, tz.local);
 
     debugPrint('📅 Scheduling starting from $scheduledTime');
     debugPrint('🔁 Repeats every $timeInHour hour(s)');
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
-  reminderId.hashCode,
-  '💊 $medicineName Reminder',
-  'Dosage: $dosage',
-  scheduledTime,
-  NotificationDetails(
-    android: AndroidNotificationDetails(
-      'medicine_reminder_channel', 
-      'Medicine Reminders',
-      channelDescription: 'Get notified when it\'s time to take your meds',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-      sound: const RawResourceAndroidNotificationSound('medicine_reminder'),
-      enableVibration: true,
-      vibrationPattern: Int64List.fromList([0, 500, 250, 500, 250, 500]), // More pronounced pattern
-      fullScreenIntent: true, // Shows even on locked screen
-      additionalFlags: Int32List.fromList([4]), // Makes sound repeat
-      color: Colors.deepPurple,
-      ledColor: Colors.purple,
-      ledOnMs: 1000,
-      ledOffMs: 500,
-    ),
-    iOS: DarwinNotificationDetails(
-      sound: 'medicine_reminder.wav',
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-      interruptionLevel: InterruptionLevel.timeSensitive,
-    ),
-  ),
-  androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-  uiLocalNotificationDateInterpretation: 
-      UILocalNotificationDateInterpretation.absoluteTime,
-  matchDateTimeComponents: DateTimeComponents.time,
-);
+      reminderId.hashCode,
+      '💊 $medicineName Reminder',
+      'Dosage: $dosage',
+      scheduledTime,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'medicine_reminder_channel',
+          'Medicine Reminders',
+          channelDescription: 'Get notified when it’s time to take your meds',
+          importance: Importance.max,
+          priority: Priority.high,
+          enableVibration: true,
+          vibrationPattern: Int64List.fromList([0, 300, 200, 300]),
+          icon: '@mipmap/pharmacy_17084816', // Replace with your custom icon
+          styleInformation: BigTextStyleInformation(
+            'It’s time to take your medicine 💊\nDosage: $dosage\n💧 Stay healthy and hydrated!',
+            contentTitle: '📅 Reminder: $medicineName',
+            summaryText: 'Tap to view details',
+          ),
+          color: Colors.deepPurple,
+          colorized: true,
+          ledColor: Colors.purple,
+          ledOnMs: 1000,
+          ledOffMs: 500,
+          ticker: 'Reminder Ticker',
+        ),
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
+    );
 
     debugPrint('✅ Notification scheduled successfully');
   } catch (e, stack) {
@@ -126,6 +125,7 @@ class NotificationService {
     debugPrint(stack.toString());
   }
 }
+
 
   Future<void> showInstantNotification() async {
     try {
