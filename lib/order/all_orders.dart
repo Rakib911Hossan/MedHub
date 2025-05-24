@@ -399,14 +399,82 @@ class _AllOrdersState extends State<AllOrders> {
     String userName,
     String phoneNumber,
   ) async {
+    // Variables to store selected delivery man
+    String? selectedDeliveryManId;
+    String? selectedDeliveryManName;
+    String? selectedDeliveryManPhone;
+
+    // List to store all delivery personnel
+    List<Map<String, dynamic>> deliveryMen = [];
+
+    // Fetch delivery personnel if admin
+    if (userRole == 'admin') {
+      try {
+        final querySnapshot =
+            await FirebaseFirestore.instance
+                .collection('user_info')
+                .where('role', isEqualTo: 'deliveryMan')
+                .get();
+
+        deliveryMen =
+            querySnapshot.docs.map((doc) {
+              // Format phone number with leading zero if needed
+              final phone = doc['phone']?.toString() ?? '';
+              final formattedPhone =
+                  phone.isNotEmpty && !phone.startsWith('0')
+                      ? '0$phone'
+                      : phone;
+
+              return {
+                'id': doc.id,
+                'name': doc['name']?.toString().trim() ?? 'No Name',
+                'phone':
+                    formattedPhone.isNotEmpty ? formattedPhone : 'No Phone',
+              };
+            }).toList();
+
+        // Set initial selection if order already has a delivery man
+        if (order['deliveryManId'] != null &&
+            order['deliveryManId'].toString().isNotEmpty) {
+          try {
+            final existing = deliveryMen.firstWhere(
+              (dm) => dm['id'] == order['deliveryManId'],
+            );
+            selectedDeliveryManId = existing['id'];
+            selectedDeliveryManName = existing['name'];
+            selectedDeliveryManPhone = existing['phone'];
+          } catch (e) {
+            debugPrint(
+              'Delivery man not found in list: ${order['deliveryManId']}',
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Error fetching delivery men: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to load delivery personnel')),
+        );
+      }
+    }
+
+    // Format phone numbers before displaying
+    String formatDisplayPhone(String? phone) {
+      if (phone == null || phone.isEmpty) return '';
+      return phone.startsWith('0') ? phone : '0$phone';
+    }
+
     final deliveryManController = TextEditingController(
-      text: userRole == 'admin' ? (order['deliveryMan'] ?? '') : userName,
+      text:
+          userRole != 'admin'
+              ? userName.trim()
+              : selectedDeliveryManName?.trim() ?? '',
     );
+
     final phoneController = TextEditingController(
       text:
-          userRole == 'admin'
-              ? (order['deliveryPhone']?.toString() ?? '')
-              : phoneNumber.toString(),
+          userRole != 'admin'
+              ? formatDisplayPhone(phoneNumber.toString())
+              : formatDisplayPhone(selectedDeliveryManPhone),
     );
 
     return showDialog(
@@ -418,45 +486,69 @@ class _AllOrdersState extends State<AllOrders> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Common confirmation message
+                if (userRole == 'admin') ...[
+                  DropdownButtonFormField<String>(
+                    value: selectedDeliveryManId,
+                    decoration: const InputDecoration(
+                      labelText: 'Select Delivery Man',
+                      border: OutlineInputBorder(),
+                    ),
+                    items:
+                        deliveryMen.map((deliveryMan) {
+                          return DropdownMenuItem<String>(
+                            value: deliveryMan['id'],
+                            child: Text(
+                              '${deliveryMan['name']} (${deliveryMan['phone']})',
+                            ),
+                          );
+                        }).toList(),
+                    onChanged: (value) {
+                      final selected = deliveryMen.firstWhere(
+                        (dm) => dm['id'] == value,
+                      );
+                      selectedDeliveryManId = selected['id'];
+                      selectedDeliveryManName = selected['name'];
+                      selectedDeliveryManPhone = selected['phone'];
+
+                      // Update the text fields to show the selected values
+                      deliveryManController.text = selected['name'];
+                      phoneController.text = selected['phone'];
+                    },
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a delivery man';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                ],
                 TextFormField(
-                  controller:
-                      deliveryManController, // Use the pre-initialized controller
+                  controller: deliveryManController,
                   decoration: InputDecoration(
                     labelText: 'Delivery Man Name',
                     border: const OutlineInputBorder(),
                     filled: true,
                     fillColor: userRole != 'admin' ? Colors.grey[200] : null,
                   ),
-                  readOnly: userRole != 'admin',
+                  readOnly: true,
                   style: TextStyle(
                     color: userRole != 'admin' ? Colors.grey[600] : null,
                   ),
                 ),
                 const SizedBox(height: 15),
                 TextFormField(
-                  controller:
-                      phoneController, // Use the pre-initialized controller
+                  controller: phoneController,
                   decoration: InputDecoration(
                     labelText: 'Contact Phone',
                     border: const OutlineInputBorder(),
                     filled: true,
                     fillColor: userRole != 'admin' ? Colors.grey[200] : null,
                   ),
-                  keyboardType: TextInputType.phone,
-                  readOnly: userRole != 'admin',
+                  readOnly: true,
                   style: TextStyle(
                     color: userRole != 'admin' ? Colors.grey[600] : null,
                   ),
-                  validator:
-                      userRole == 'admin'
-                          ? (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter phone number';
-                            }
-                            return null;
-                          }
-                          : null,
                 ),
                 if (userRole == 'deliveryMan') ...[
                   const SizedBox(height: 15),
@@ -476,6 +568,15 @@ class _AllOrdersState extends State<AllOrders> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
               onPressed: () async {
+                if (userRole == 'admin' && selectedDeliveryManId == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please select a delivery man'),
+                    ),
+                  );
+                  return;
+                }
+
                 if (phoneController.text.isEmpty ||
                     deliveryManController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -483,9 +584,7 @@ class _AllOrdersState extends State<AllOrders> {
                   );
                   return;
                 }
-                // setState(() {
-                //   _isLoading = true; // Show loading before operation
-                // });
+
                 try {
                   await FirebaseFirestore.instance
                       .collection('orders')
@@ -495,8 +594,9 @@ class _AllOrdersState extends State<AllOrders> {
                         'confirmedBy': userName,
                         'updatedAt': FieldValue.serverTimestamp(),
                         if (userRole == 'admin') ...{
-                          'deliveryMan': deliveryManController.text,
-                          'deliveryPhone': phoneController.text,
+                          'deliveryManId': selectedDeliveryManId,
+                          'deliveryMan': selectedDeliveryManName,
+                          'deliveryPhone': selectedDeliveryManPhone,
                         },
                         if (userRole == 'deliveryMan') ...{
                           'deliveryMan': userName,
@@ -504,6 +604,7 @@ class _AllOrdersState extends State<AllOrders> {
                         },
                         'confirmedAt': FieldValue.serverTimestamp(),
                       });
+
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
