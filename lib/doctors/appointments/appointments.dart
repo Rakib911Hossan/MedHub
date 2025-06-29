@@ -14,6 +14,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String? _userRole;
+  String? _userName;
   String? _currentUserId;
 
   @override
@@ -34,6 +35,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
       if (userDoc.exists) {
         setState(() {
           _userRole = userDoc.data()?['role'] ?? 'user';
+          _userName = userDoc.data()?['name'] ?? 'Unknown User';
         });
       }
     }
@@ -246,7 +248,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 if (_userRole == 'admin') {
                   return appt['status'] == 'pending' ||
                       appt['status'] == 'confirmed';
-                } else {
+                }else if (_userRole == 'doctor' && _userName == appt['doctorName']) {
+                  return appt['status'] == 'pending' ||
+                      appt['status'] == 'confirmed';
+                }
+                 else {
                   return appt['uid'] == _currentUserId;
                 }
               }).toList();
@@ -277,6 +283,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               final appointmentDate =
                   (appointment['appointmentDate'] as Timestamp).toDate();
               final status = appointment['status'] ?? 'pending';
+              final doctorData =
+                  snapshot.data!.docs
+                          .firstWhere((doc) => doc.id == doctorId)
+                          .data()
+                      as Map<String, dynamic>;
 
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -380,6 +391,15 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                           value: appointment['speciality'] ?? 'General',
                         ),
 
+                        const SizedBox(height: 8),
+
+                        if (appointment['status'] == 'confirmed')
+                          _buildInfoRow(
+                            icon: Icons.work_outline,
+                            label: 'Appointment Link',
+                            value: doctorData['appointmentLink'] ?? 'General',
+                          ),
+
                         const Divider(height: 24, thickness: 0.5),
 
                         // Date and time row - now with overflow protection
@@ -432,6 +452,17 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                           },
                         ),
 
+                        const Divider(height: 24, thickness: 0.5),
+
+                        if (appointment['status'] == 'pending')
+                          _buildInfoRow(
+                            icon: Icons.payment,
+                            label: 'Payment(Bkash)',
+                            value: '01680069764',
+                             isBold: true,
+                          ),
+                          
+
                         const SizedBox(height: 16),
 
                         // Action buttons - fixed overflow
@@ -469,7 +500,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                       ),
                                 ),
                               ),
-                            if (status == 'pending' || _userRole == 'admin' && status == 'confirmed')
+                            if (status == 'pending' ||
+                                _userRole == 'admin' && status == 'confirmed')
                               SizedBox(
                                 width: 120, // Fixed width for buttons
                                 child: OutlinedButton.icon(
